@@ -1,0 +1,294 @@
+/* Variables needed by Navbar component */
+:root {
+  --primary-color: #4a6fa5;
+  --secondary-color: #166088;
+  --accent-color: #4fc3c5;
+  --text-color: #333;
+  --light-text: #fff;
+  --background-light: #f5f7fb;
+  --border-radius: 8px;
+  --primary-color-rgb: 74, 111, 165;
+  --border-color: #e0e0e0;
+  --border-color-rgb: 224, 224, 224;
+}
+
+/* Navbar Container */
+.navbar {
+  background-color: var(--background-light);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.navbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  height: 62px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Logo and Brand */
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.navbar-logo svg {
+  color: var(--primary-color);
+}
+
+/* Right Side Elements */
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 100%; /* Fill the navbar height */
+}
+
+/* Auth Links */
+.login-button {
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  border-radius: var(--border-radius);
+  transition: font-weight 0.2s, transform 0.2s, background-color 0.2s;
+}
+
+.login-button:hover {
+  font-weight: bold;
+  transform: scale(1.08);
+  background-color: rgba(var(--border-color-rgb), 0.1);
+}
+
+.register-button {
+  background-color: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  transition: box-shadow 0.3s, background-color 0.3s;
+}
+
+.register-button:hover {
+  background-color: #27ae60;
+  box-shadow: 0 0 8px rgba(39, 174, 96, 0.6);
+}
+
+/* User menu when logged in */
+.user-menu-container {
+  position: relative;
+}
+
+.user-menu-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  border-radius: 50%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-menu-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-avatar,
+.navbar-avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.navbar-avatar-placeholder {
+  background-color: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.user-menu-container:hover .navbar-avatar,
+.user-menu-container:hover .navbar-avatar-placeholder {
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+/*sohamghosh-jellylemonshake-23bps1146 */
+/* Enhanced User Dropdown Menu Styles */
+.user-dropdown-menu {
+  position: absolute;
+  top: 45px;
+  right: 0;
+  background-color: var(--background-light);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 220px;
+  overflow: hidden;
+  z-index: 100;
+  transform-origin: top right;
+  animation: dropdownFadeIn 0.2s ease-out;
+  border: 1px solid var(--border-color);
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* User info popup section styling */
+.user-info-popup {
+  padding: 15px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: rgba(var(--primary-color-rgb), 0.05);
+}
+
+.user-dropdown-menu .user-name {
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.user-dropdown-menu .user-email {
+  color: var(--secondary-color);
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dropdown menu items */
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.dropdown-item:hover svg {
+  stroke-width: 2.5;
+  color: var(--primary-color);
+}
+
+.dropdown-item.logout {
+  color: #ff3b30;
+}
+
+.dropdown-item.logout:hover {
+  background-color: rgba(255, 59, 48, 0.1);
+  box-shadow: 0 0 8px rgba(255, 59, 48, 0.2);
+}
+
+/* Space below navbar for content */
+.content-container {
+  margin-top: 60px; /* Same as navbar height */
+  padding: 20px;
+}
+/*sohamghosh-jellylemonshake-23bps1146 */
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .navbar-container {
+    padding: 0 15px;
+  }
+
+  .navbar-logo span {
+    display: none; /* Hide text logo on small screens */
+  }
+
+  .auth-links {
+    gap: 10px;
+  }
+
+  .login-button,
+  .register-button {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Enhanced button hover effects */
+.login-button,
+.register-button {
+  transition: transform 0.3s, background-color 0.3s, box-shadow 0.3s;
+}
+
+.login-button:hover {
+  transform: translateY(-2px);
+}
+
+.register-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(var(--primary-color-rgb), 0.3);
+}
+
+/* Enhanced logo transition */
+.navbar-logo {
+  transition: transform 0.3s, color 0.3s;
+}
+
+.navbar-logo:hover {
+  transform: scale(1.05);
+  color: var(--primary-color);
+}
+
+/* Enhanced dropdown transitions */
+.user-dropdown-menu {
+  animation: dropdownAppear 0.3s ease forwards;
+}
+
+@keyframes dropdownAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-item {
+  transition: background-color 0.3s, padding-left 0.3s;
+}
+
+.dropdown-item:hover {
+  padding-left: 20px;
+}
