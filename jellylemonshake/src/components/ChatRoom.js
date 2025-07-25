@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import MessageItem from "./MessageItem";
 import { useAuth } from "./AuthContext";
 import "../styles/components/ChatRoom.css";
+import EmojiPicker from 'emoji-picker-react';
 
 function ChatRoom() {
   const { roomId } = useParams();
@@ -64,6 +65,12 @@ function ChatRoom() {
   const [emojiPickerHiding, setEmojiPickerHiding] = useState(false);
   const [languageSelectorHiding, setLanguageSelectorHiding] = useState(false);
   const [taggedMessageHiding, setTaggedMessageHiding] = useState(false);
+  // Add at the top with other useState imports
+  const [executionMode, setExecutionMode] = useState(false);
+  const [codeToRun, setCodeToRun] = useState("");
+  const [runLanguage, setRunLanguage] = useState("javascript");
+  const [runOutput, setRunOutput] = useState("");
+  const [isRunning, setIsRunning] = useState(false);
 
   // [All refs and constant declarations remain the same]
   const messagesEndRef = useRef(null);
@@ -95,30 +102,6 @@ function ChatRoom() {
     { id: "typescript", name: "TypeScript" },
     { id: "html", name: "HTML" },
     { id: "css", name: "CSS" },
-  ];
-
-  // Common emojis for the picker
-  const commonEmojis = [
-    "😊",
-    "😂",
-    "❤️",
-    "👍",
-    "🎉",
-    "😎",
-    "😢",
-    "🤔",
-    "👋",
-    "🙏",
-    "🔥",
-    "✨",
-    "💯",
-    "🤣",
-    "😊",
-    "🥳",
-    "👏",
-    "💪",
-    "🤦‍♂️",
-    "🤷‍♀️",
   ];
 
   // Update roomOrder when joinedRooms changes
@@ -1856,6 +1839,57 @@ function ChatRoom() {
           </div>
         </div>
 
+        <div style={{ margin: '1rem 0' }}>
+  <button onClick={() => setExecutionMode((m) => !m)} style={{ padding: '0.5rem 1rem' }}>
+    {executionMode ? 'Exit Execution Mode' : 'I want to execute code'}
+  </button>
+</div>
+
+{executionMode && (
+  <div style={{ marginBottom: '1rem', background: '#222', padding: '1rem', borderRadius: '8px' }}>
+    <div style={{ marginBottom: '0.5rem' }}>
+      <label style={{ color: '#fff', marginRight: '0.5rem' }}>Language:</label>
+      <select value={runLanguage} onChange={e => setRunLanguage(e.target.value)}>
+        {codeLanguages.map(lang => (
+          <option key={lang.id} value={lang.id}>{lang.name}</option>
+        ))}
+      </select>
+    </div>
+    <textarea
+      value={codeToRun}
+      onChange={e => setCodeToRun(e.target.value)}
+      placeholder="Type code to execute..."
+      rows={8}
+      style={{ width: '100%', fontFamily: 'monospace', fontSize: '1rem', background: '#1a1a1a', color: '#fff', border: '1px solid #444', borderRadius: '4px', marginBottom: '0.5rem' }}
+    />
+    <button
+      onClick={async () => {
+        setIsRunning(true);
+        setRunOutput("");
+        try {
+          const res = await fetch("http://localhost:5000/api/jdoodle/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: codeToRun, language: runLanguage })
+          });
+          const data = await res.json();
+          setRunOutput(data.output || data.error || JSON.stringify(data));
+        } catch (err) {
+          setRunOutput("Error: " + err.message);
+        }
+        setIsRunning(false);
+      }}
+      disabled={isRunning || !codeToRun.trim()}
+      style={{ padding: '0.5rem 1rem', marginRight: '1rem' }}
+    >
+      {isRunning ? 'Running...' : 'Run'}
+    </button>
+    {runOutput && (
+      <pre style={{ background: '#111', color: '#0f0', padding: '0.75rem', borderRadius: '4px', marginTop: '0.5rem', whiteSpace: 'pre-wrap' }}>{runOutput}</pre>
+    )}
+  </div>
+)}
+
         <div className="chat-content">
           <div className="messages-container" style={{ position: "relative" }}>
             {/*sohamghosh-jellylemonshake-23bps1146 */
@@ -2063,21 +2097,15 @@ function ChatRoom() {
                 {/* Emoji Picker */}
                 {showEmojiPicker && (
                   <div
-                    className={`emoji-picker ${
-                      emojiPickerHiding ? "hiding" : ""
-                    }`}
+                    className={`emoji-picker ${emojiPickerHiding ? "hiding" : ""}`}
                     ref={emojiPickerRef}
+                    style={{ zIndex: 1000 }}
                   >
-                    {commonEmojis.map((emoji, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        className="emoji-item"
-                        onClick={() => insertEmoji(emoji)}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
+                    <EmojiPicker
+                      onEmojiClick={(emojiData) => insertEmoji(emojiData.emoji)}
+                      theme="dark"
+                      width={300}
+                    />
                   </div>
                 )}
 

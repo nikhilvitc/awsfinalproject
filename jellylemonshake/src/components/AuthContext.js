@@ -1,80 +1,82 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
-import "../styles/components/AuthContext.css";
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient';
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setIsAuthenticated(true);
+    const session = supabase.auth.getSession();
+    if (session) {
+      setUser(session.user);
+    } else {
+      // Guest mode: generate random guest user
+      const guest = localStorage.getItem('guestUser');
+      if (guest) {
+        setUser(JSON.parse(guest));
+      } else {
+        const guestUser = {
+          id: 'guest-' + Math.random().toString(36).substring(2, 10),
+          username: 'Guest' + Math.floor(Math.random() * 10000),
+          isGuest: true,
+        };
+        localStorage.setItem('guestUser', JSON.stringify(guestUser));
+        setUser(guestUser);
+      }
     }
     setLoading(false);
+    // Listen for auth changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session && session.user) {
+        setUser(session.user);
+        localStorage.removeItem('guestUser');
+      } else {
+        setUser(null);
+      }
+    });
+    return () => {
+      listener?.subscription?.unsubscribe();
+    };
   }, []);
 
   const login = async (email, password) => {
-    try {
-      setLoading(true);
-      // Simulate API call - will be replaced with real backend later
-      const mockUser = {
-        id: "user-" + Math.random().toString(36).substr(2, 9),
-        name: email.split("@")[0],
-        email: email,
-        avatar: null,
-      };
-
-      localStorage.setItem("user", JSON.stringify(mockUser));
-      setUser(mockUser);
-      setIsAuthenticated(true);
-      setLoading(false);
-      return { success: true };
-    } catch (error) {
-      setLoading(false);
-      return { success: false, error: error.message };
-    }
-  };
-  /*sohamghosh-jellylemonshake-23bps1146 */
-
-  const register = async (name, email, password) => {
-    try {
-      setLoading(true);
-      // Simulate API call - will be replaced with real backend later
-      const mockUser = {
-        id: "user-" + Math.random().toString(36).substr(2, 9),
-        name: name,
-        email: email,
-        avatar: null,
-      };
-
-      localStorage.setItem("user", JSON.stringify(mockUser));
-      setUser(mockUser);
-      setIsAuthenticated(true);
-      setLoading(false);
-      return { success: true };
-    } catch (error) {
-      setLoading(false);
-      return { success: false, error: error.message };
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    setUser(data.user);
+    localStorage.removeItem('guestUser');
+    return data.user;
   };
 
-  const logout = () => {
-    localStorage.removeItem("user");
+  const signup = async (email, password) => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    setUser(data.user);
+    localStorage.removeItem('guestUser');
+    return data.user;
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    setIsAuthenticated(false);
+    // Optionally, re-enable guest mode
+    const guestUser = {
+      id: 'guest-' + Math.random().toString(36).substring(2, 10),
+      username: 'Guest' + Math.floor(Math.random() * 10000),
+      isGuest: true,
+    };
+    localStorage.setItem('guestUser', JSON.stringify(guestUser));
+    setUser(guestUser);
   };
 
   return (
-    <AuthContext.Provider
-      value={{ isAuthenticated, user, login, register, logout, loading }}
-    >
+    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  return useContext(AuthContext);
+}

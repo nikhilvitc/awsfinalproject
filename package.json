@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@supabase/supabase-js": "^2.52.1",
+    "emoji-picker-react": "^4.13.2",
+    "motion": "^12.23.9"
+  }
+}
