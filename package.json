@@ -1,7 +1,16 @@
 {
-  "dependencies": {
-    "@supabase/supabase-js": "^2.52.1",
-    "emoji-picker-react": "^4.13.2",
-    "motion": "^12.23.9"
-  }
+  "name": "chatroom-backend",
+  "version": "1.0.0",
+  "description": "Backend for ChatRoom application",
+  "main": "backend/index.js",
+  "scripts": {
+    "start": "cd backend && npm start",
+    "install": "cd backend && npm install",
+    "build": "cd backend && npm install",
+    "dev": "cd backend && npm run dev"
+  },
+  "keywords": ["chatroom", "backend", "express", "mongodb"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {}
 }
