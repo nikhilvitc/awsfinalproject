@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: chatroom-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JDOODLE_CLIENT_ID
+        sync: false
+      - key: JDOODLE_CLIENT_SECRET
+        sync: false 

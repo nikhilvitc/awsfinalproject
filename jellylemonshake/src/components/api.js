@@ -1,5 +1,5 @@
 // api.js
-export const API_BASE_URL = "https://your-api-domain.com";
+export const API_BASE_URL = "https://awsproject-1.onrender.com/api";
 
 // Helper for handling fetch responses
 const handleResponse = async (response) => {
@@ -29,14 +29,14 @@ const getAuthHeaders = () => {
 export const api = {
   // Auth
   login: (credentials) =>
-    fetch(`${API_BASE_URL}/api/auth/login`, {
+    fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
     }).then(handleResponse),
 
   register: (userData) =>
-    fetch(`${API_BASE_URL}/api/auth/register`, {
+    fetch(`${API_BASE_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),
@@ -44,12 +44,12 @@ export const api = {
 
   // Users
   getCurrentUser: () =>
-    fetch(`${API_BASE_URL}/api/users/me`, {
+    fetch(`${API_BASE_URL}/users/me`, {
       headers: getAuthHeaders(),
     }).then(handleResponse),
 
   updateProfile: (formData) =>
-    fetch(`${API_BASE_URL}/api/users/profile`, {
+    fetch(`${API_BASE_URL}/users/profile`, {
       method: "PUT",
       headers: { Authorization: getAuthHeaders().Authorization },
       body: formData,
@@ -57,26 +57,26 @@ export const api = {
 
   // Rooms
   createRoom: (roomData) =>
-    fetch(`${API_BASE_URL}/api/rooms`, {
+    fetch(`${API_BASE_URL}/rooms`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(roomData),
     }).then(handleResponse),
 
   getRooms: () =>
-    fetch(`${API_BASE_URL}/api/rooms`, {
+    fetch(`${API_BASE_URL}/rooms`, {
       headers: getAuthHeaders(),
     }).then(handleResponse),
 
   joinRoom: (roomId, password) =>
-    fetch(`${API_BASE_URL}/api/rooms/${roomId}/join`, {
+    fetch(`${API_BASE_URL}/rooms/${roomId}/join`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({ password }),
     }).then(handleResponse),
 
   leaveRoom: (roomId) =>
-    fetch(`${API_BASE_URL}/api/rooms/${roomId}/leave`, {
+    fetch(`${API_BASE_URL}/rooms/${roomId}/leave`, {
       method: "POST",
       headers: getAuthHeaders(),
     }).then(handleResponse),
@@ -84,7 +84,7 @@ export const api = {
   // Messages
   getMessages: (roomId, page = 1, limit = 50) =>
     fetch(
-      `${API_BASE_URL}/api/rooms/${roomId}/messages?page=${page}&limit=${limit}`,
+      `${API_BASE_URL}/rooms/${roomId}/messages?page=${page}&limit=${limit}`,
       {
         headers: getAuthHeaders(),
       }
@@ -101,7 +101,7 @@ export const api = {
         }
       });
 /*sohamghosh-jellylemonshake-23bps1146 */
-      return fetch(`${API_BASE_URL}/api/rooms/${roomId}/messages`, {
+      return fetch(`${API_BASE_URL}/rooms/${roomId}/messages`, {
         method: "POST",
         headers: { Authorization: getAuthHeaders().Authorization },
         body: formData,
@@ -109,7 +109,7 @@ export const api = {
     }
 
     // Regular JSON message
-    return fetch(`${API_BASE_URL}/api/rooms/${roomId}/messages`, {
+    return fetch(`${API_BASE_URL}/rooms/${roomId}/messages`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(messageData),
@@ -118,7 +118,7 @@ export const api = {
 
   searchMessages: (roomId, query) =>
     fetch(
-      `${API_BASE_URL}/api/rooms/${roomId}/messages/search?q=${encodeURIComponent(
+      `${API_BASE_URL}/rooms/${roomId}/messages/search?q=${encodeURIComponent(
         query
       )}`,
       {
