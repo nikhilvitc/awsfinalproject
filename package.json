@@ -12,5 +12,7 @@
   "keywords": ["chatroom", "backend", "express", "mongodb"],
   "author": "",
   "license": "ISC",
-  "dependencies": {}
+  "dependencies": {
+    "semver": "^7.7.2"
+  }
 }
