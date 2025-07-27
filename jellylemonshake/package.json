@@ -4,6 +4,9 @@
   "description": "ChatRoom application with code execution",
   "keywords": ["chat", "code-execution", "react"],
   "main": "src/index.js",
+  "engines": {
+    "node": "18.x"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "emoji-picker-react": "^4.5.0",
@@ -12,7 +15,8 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0",
     "react-scripts": "5.0.1",
-    "react-syntax-highlighter": "^15.6.1"
+    "react-syntax-highlighter": "^15.6.1",
+    "semver": "^7.5.4"
   },
   "scripts": {
     "start": "react-scripts start",
