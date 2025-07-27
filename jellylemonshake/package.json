@@ -6,9 +6,7 @@
   "main": "src/index.js",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
-    "babel-loader": "^8.2.5",
     "emoji-picker-react": "^4.5.0",
-    "loader-utils": "^2.0.4",
     "motion": "^10.16.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
