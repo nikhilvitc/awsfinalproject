@@ -9,11 +9,15 @@
     "install": "cd jellylemonshake && npm install",
     "dev": "cd backend && npm run dev"
   },
-  "keywords": ["chatroom", "backend", "express", "mongodb"],
+  "keywords": [
+    "chatroom",
+    "backend",
+    "express",
+    "mongodb"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "semver": "^7.7.2"
   }
 }
-

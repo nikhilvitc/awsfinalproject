@@ -1,16 +1,19 @@
 {
+  "version": 2,
   "builds": [
     {
       "src": "jellylemonshake/package.json",
-      "use": "@vercel/static-build@2",
+      "use": "@vercel/static-build",
       "config": {
-        "distDir": "build"
+        "distDir": "build",
+        "framework": "create-react-app"
       }
     }
   ],
-  "build": {
-    "env": {
-      "NODE_VERSION": "18.20.4"
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/jellylemonshake/$1"
     }
-  }
+  ]
 }
