@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "jellylemonshake/src/**": {
-      "runtime": "@vercel/node@18.x"
-    }
-  },
   "builds": [
     {
       "src": "jellylemonshake/package.json",
