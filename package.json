@@ -4,9 +4,9 @@
   "description": "Backend for ChatRoom application",
   "main": "backend/index.js",
   "scripts": {
-    "start": "cd backend && npm start",
-    "install": "cd backend && npm install",
-    "build": "cd backend && npm install",
+    "start": "cd jellylemonshake && npm start",
+    "build": "cd jellylemonshake && npm run build",
+    "install": "cd jellylemonshake && npm install",
     "dev": "cd backend && npm run dev"
   },
   "keywords": ["chatroom", "backend", "express", "mongodb"],
@@ -16,3 +16,4 @@
     "semver": "^7.7.2"
   }
 }
+
