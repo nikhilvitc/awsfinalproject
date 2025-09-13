@@ -25,13 +25,11 @@ export const Login = () => {
 
     try {
       const result = await login(email, password);
-      if (result.success) {
+      if (result) {
         navigate("/");
-      } else {
-        setError(result.error || "Login failed");
       }
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      setError(err.message || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }
@@ -105,7 +103,7 @@ export const Register = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { register } = useAuth();
+  const { signup } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -126,14 +124,12 @@ export const Register = () => {
     }
 
     try {
-      const result = await register(name, email, password);
-      if (result.success) {
+      const result = await signup(email, password, name);
+      if (result) {
         navigate("/");
-      } else {
-        setError(result.error || "Registration failed");
       }
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      setError(err.message || "An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }

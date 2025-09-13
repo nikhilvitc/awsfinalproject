@@ -49,8 +49,16 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
-  const signup = async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+  const signup = async (email, password, displayName) => {
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        data: {
+          display_name: displayName
+        }
+      }
+    });
     if (error) throw error;
     setUser(data.user);
     localStorage.removeItem('guestUser');
