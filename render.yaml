@@ -21,9 +21,8 @@ services:
         sync: false
 
   # Frontend Static Site
-  - type: web
+  - type: static
     name: awsproject-frontend
-    env: static
     plan: free
     buildCommand: cd jellylemonshake && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && REACT_APP_API_URL=https://awsproject-backend.onrender.com npm run build
     staticPublishPath: jellylemonshake/build
@@ -32,6 +31,8 @@ services:
         value: https://awsproject-backend.onrender.com
       - key: NODE_ENV
         value: production
+      - key: CI
+        value: false
 
 # Optional: Database (if you want to use Render's PostgreSQL instead of MongoDB Atlas)
 # databases:
