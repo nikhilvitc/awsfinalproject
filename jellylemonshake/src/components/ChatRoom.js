@@ -10,7 +10,7 @@ import EmojiPicker from 'emoji-picker-react';
 function ChatRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { user: authUser } = useAuth();
+  const { user: authUser, isAuthenticated } = useAuth();
 
   // [All state variables and refs remain the same]
   const [user, setUser] = useState(null);
