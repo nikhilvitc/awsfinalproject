@@ -8,27 +8,33 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const session = supabase.auth.getSession();
-    if (session) {
-      setUser(session.user);
-    } else {
-      // Guest mode: generate random guest user
-      const guest = localStorage.getItem('guestUser');
-      if (guest) {
-        setUser(JSON.parse(guest));
+    // Get initial session
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setUser(session.user);
       } else {
-        const guestUser = {
-          id: 'guest-' + Math.random().toString(36).substring(2, 10),
-          username: 'Guest' + Math.floor(Math.random() * 10000),
-          isGuest: true,
-        };
-        localStorage.setItem('guestUser', JSON.stringify(guestUser));
-        setUser(guestUser);
+        // Guest mode: generate random guest user
+        const guest = localStorage.getItem('guestUser');
+        if (guest) {
+          setUser(JSON.parse(guest));
+        } else {
+          const guestUser = {
+            id: 'guest-' + Math.random().toString(36).substring(2, 10),
+            username: 'Guest' + Math.floor(Math.random() * 10000),
+            isGuest: true,
+          };
+          localStorage.setItem('guestUser', JSON.stringify(guestUser));
+          setUser(guestUser);
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    getInitialSession();
+
     // Listen for auth changes
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session && session.user) {
         setUser(session.user);
         localStorage.removeItem('guestUser');
@@ -36,8 +42,9 @@ export function AuthProvider({ children }) {
         setUser(null);
       }
     });
+
     return () => {
-      listener?.subscription?.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 

@@ -9,7 +9,7 @@ function Home() {
   const [password, setPassword] = useState("");
   const [roomsExpanded, setRoomsExpanded] = useState(false);
   const myRoomsRef = useRef(null);
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
   const [view, setView] = useState("select");
   const [showRoomsList, setShowRoomsList] = useState(false);
   const [joinedRooms, setJoinedRooms] = useState([]);
@@ -381,6 +381,11 @@ function Home() {
   const renderSelectView = () => (
     <div className={`home-options ${dialogVisible ? "hidden" : ""}`}>
       <h1>Welcome to Chat Rooms</h1>
+      {user && !user.isGuest && (
+        <div className="user-welcome">
+          <p>Welcome back, {user.email || user.user_metadata?.display_name || 'User'}!</p>
+        </div>
+      )}
       <div className="options-container">
         <button
           className="option-button create"
