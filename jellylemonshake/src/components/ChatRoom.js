@@ -973,6 +973,12 @@ function ChatRoom() {
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!messageInput.trim() && !fileInputRef.current?.files?.length) return;
+    
+    // Check if user is authenticated
+    if (!authUser) {
+      setError('Please log in to send messages');
+      return;
+    }
 
     const messageData = {
       roomId,
@@ -1007,7 +1013,7 @@ function ChatRoom() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            user: authUser.username || authUser.email,
+            user: authUser ? (authUser.username || authUser.email) : 'Anonymous',
             text: messageInput,
             code: isCodeOn ? messageInput : null,
             language: isCodeOn ? selectedLanguage : null
@@ -1404,6 +1410,18 @@ function ChatRoom() {
 
   if (loading) {
     return <div className="loading">Loading chat room...</div>;
+  }
+
+  if (!authUser) {
+    return (
+      <div className="error-container">
+        <h2>Authentication Required</h2>
+        <p>Please log in to access the chat room.</p>
+        <button onClick={() => navigate('/')} className="home-button">
+          Back to Home
+        </button>
+      </div>
+    );
   }
 
   if (error) {
