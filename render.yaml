@@ -14,26 +14,19 @@ services:
       - key: PORT
         value: 10000
       - key: MONGODB_URI
-        fromDatabase:
-          name: mongodb-connection
-          property: connectionString
+        sync: false
       - key: JDOODLE_CLIENT_ID
         sync: false
       - key: JDOODLE_CLIENT_SECRET
         sync: false
-    domains:
-      - awsproject-backend.onrender.com
 
   # Frontend Static Site
   - type: web
     name: awsproject-frontend
     env: static
-    region: oregon
     plan: free
     buildCommand: cd jellylemonshake && npm install && REACT_APP_API_URL=https://awsproject-backend.onrender.com npm run build
     staticPublishPath: jellylemonshake/build
-    domains:
-      - awsproject.onrender.com
     envVars:
       - key: REACT_APP_API_URL
         value: https://awsproject-backend.onrender.com
