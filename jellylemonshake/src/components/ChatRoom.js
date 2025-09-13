@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import MessageItem from "./MessageItem";
+import MeetingScheduler from "./MeetingScheduler";
+import InstantMeet from "./InstantMeet";
 import { useAuth } from "./AuthContext";
 import "../styles/components/ChatRoom.css";
 import EmojiPicker from 'emoji-picker-react';
@@ -8,7 +10,7 @@ import EmojiPicker from 'emoji-picker-react';
 function ChatRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user: authUser, logout, avatarVersion } = useAuth();
+  const { user: authUser } = useAuth();
 
   // [All state variables and refs remain the same]
   const [user, setUser] = useState(null);
@@ -71,6 +73,8 @@ function ChatRoom() {
   const [runLanguage, setRunLanguage] = useState("javascript");
   const [runOutput, setRunOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
+  const [showInstantMeet, setShowInstantMeet] = useState(false);
 
   // [All refs and constant declarations remain the same]
   const messagesEndRef = useRef(null);
@@ -1833,6 +1837,20 @@ function ChatRoom() {
             <button onClick={copyRoomLink} className="copy-button">
               Share Room
             </button>
+            <button 
+              onClick={() => setShowInstantMeet(true)} 
+              className="instant-meet-button"
+              title="Start instant meeting"
+            >
+              🎥 Start Meeting
+            </button>
+            <button 
+              onClick={() => setShowMeetingScheduler(true)} 
+              className="meeting-button"
+              title="Schedule a meeting"
+            >
+              📅 Schedule Meeting
+            </button>
             <button onClick={leaveRoom} className="leave-button">
               Leave Room
             </button>
@@ -2242,6 +2260,40 @@ function ChatRoom() {
                 Not Now
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showMeetingScheduler && (
+        <div className="meeting-scheduler-overlay">
+          <div className="meeting-scheduler-modal">
+            <MeetingScheduler
+              roomId={roomId}
+              participants={participants}
+              onClose={() => setShowMeetingScheduler(false)}
+              onMeetingCreated={(meeting) => {
+                console.log('Meeting created:', meeting);
+                setShowMeetingScheduler(false);
+                // You can add logic here to notify participants about the new meeting
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {showInstantMeet && (
+        <div className="instant-meet-overlay">
+          <div className="instant-meet-modal">
+            <InstantMeet
+              roomId={roomId}
+              participants={participants}
+              onClose={() => setShowInstantMeet(false)}
+              onMeetingStarted={(meetingData) => {
+                console.log('Instant meeting started:', meetingData);
+                setShowInstantMeet(false);
+                // You can add logic here to handle the started meeting
+              }}
+            />
           </div>
         </div>
       )}

@@ -333,7 +333,9 @@
 }
 
 .copy-button,
-.leave-button {
+.leave-button,
+.meeting-button,
+.instant-meet-button {
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -348,6 +350,26 @@
 
 .copy-button:hover {
   background-color: var(--background-dark);
+}
+
+.meeting-button {
+  background-color: rgba(74, 111, 165, 0.1);
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+.meeting-button:hover {
+  background-color: rgba(74, 111, 165, 0.2);
+}
+
+.instant-meet-button {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
+  cursor: pointer;
+}
+
+.instant-meet-button:hover {
+  background-color: rgba(76, 175, 80, 0.2);
 }
 
 .leave-button {
