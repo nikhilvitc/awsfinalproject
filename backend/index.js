@@ -29,12 +29,37 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log('MongoDB connected'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+// MongoDB connection with fallback
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('MongoDB connected (Primary)');
+  } catch (error) {
+    console.error('Primary MongoDB connection failed:', error.message);
+    
+    // Try backup connection
+    if (process.env.MONGODB_URI_BACKUP) {
+      try {
+        await mongoose.connect(process.env.MONGODB_URI_BACKUP, {
+          useNewUrlParser: true,
+          useUnifiedTopology: true,
+        });
+        console.log('MongoDB connected (Backup)');
+      } catch (backupError) {
+        console.error('Backup MongoDB connection also failed:', backupError.message);
+        process.exit(1);
+      }
+    } else {
+      console.error('No backup MongoDB URI available');
+      process.exit(1);
+    }
+  }
+};
+
+connectDB();
 
 // Routes
 app.use('/api/rooms', require('./routes/chatrooms'));

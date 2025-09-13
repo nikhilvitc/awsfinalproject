@@ -4,6 +4,7 @@ import MessageItem from "./MessageItem";
 import MeetingScheduler from "./MeetingScheduler";
 import InstantMeet from "./InstantMeet";
 import { useAuth } from "./AuthContext";
+import socketService from "../services/socketService";
 import "../styles/components/ChatRoom.css";
 import EmojiPicker from 'emoji-picker-react';
 
@@ -75,6 +76,12 @@ function ChatRoom() {
   const [isRunning, setIsRunning] = useState(false);
   const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
   const [showInstantMeet, setShowInstantMeet] = useState(false);
+  
+  // Socket.IO states
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [onlineUsersCount, setOnlineUsersCount] = useState(0);
+  const [typingUsers, setTypingUsers] = useState(new Set());
+  const [socketConnected, setSocketConnected] = useState(false);
 
   // [All refs and constant declarations remain the same]
   const messagesEndRef = useRef(null);
@@ -230,6 +237,89 @@ function ChatRoom() {
       setIsRoomSaved(roomExists);
     }
   }, [isAuthenticated, roomId]);
+
+  // Socket.IO connection and real-time chat functionality
+  useEffect(() => {
+    if (!authUser || !roomId) return;
+
+    // Connect to Socket.IO
+    socketService.connect();
+    setSocketConnected(socketService.isConnected());
+
+    // Join the room
+    socketService.joinRoom(roomId, authUser);
+
+    // Set up event listeners
+    socketService.onNewMessage((message) => {
+      setMessages(prevMessages => {
+        // Check if message already exists to prevent duplicates
+        const messageExists = prevMessages.some(msg => msg._id === message._id);
+        if (messageExists) return prevMessages;
+        
+        // Add new message
+        return [...prevMessages, message];
+      });
+    });
+
+    socketService.onUserJoined((data) => {
+      console.log('User joined:', data.user.username || data.user.email);
+    });
+
+    socketService.onUserLeft((data) => {
+      console.log('User left:', data.user.username || data.user.email);
+    });
+
+    socketService.onRoomUsers((users) => {
+      setOnlineUsers(users);
+    });
+
+    socketService.onUsersCount((count) => {
+      setOnlineUsersCount(count);
+    });
+
+    socketService.onUserTyping((data) => {
+      setTypingUsers(prevTyping => {
+        const newTyping = new Set(prevTyping);
+        if (data.isTyping) {
+          newTyping.add(data.user);
+        } else {
+          newTyping.delete(data.user);
+        }
+        return newTyping;
+      });
+      
+      // Clear typing indicator after 3 seconds
+      setTimeout(() => {
+        setTypingUsers(prevTyping => {
+          const newTyping = new Set(prevTyping);
+          newTyping.delete(data.user);
+          return newTyping;
+        });
+      }, 3000);
+    });
+
+    socketService.onError((error) => {
+      console.error('Socket error:', error);
+      setError('Connection error: ' + error.message);
+    });
+
+    // Cleanup on unmount or room change
+    return () => {
+      if (authUser && roomId) {
+        socketService.leaveRoom(roomId, authUser);
+      }
+      socketService.removeAllListeners();
+    };
+  }, [authUser, roomId]);
+
+  // Handle Socket.IO connection status
+  useEffect(() => {
+    const checkConnection = setInterval(() => {
+      setSocketConnected(socketService.isConnected());
+    }, 1000);
+
+    return () => clearInterval(checkConnection);
+  }, []);
 
   // Handle clicks outside the user menu
   useEffect(() => {
@@ -859,16 +949,17 @@ function ChatRoom() {
     }, 300); // Match the animation duration
   };
 
-  const sendMessage = (e) => {
+  const sendMessage = async (e) => {
     e.preventDefault();
     if (!messageInput.trim() && !fileInputRef.current?.files?.length) return;
 
-    const newMessage = {
+    const messageData = {
+      roomId,
+      user: authUser,
       text: messageInput,
-      sender: user.username,
-      senderName: user.username,
-      color: user.color,
-      timestamp: new Date().toISOString(),
+      code: isCodeOn ? messageInput : null,
+      language: isCodeOn ? selectedLanguage : null,
+      output: null,
       attachment: fileInputRef.current?.files?.length
         ? fileInputRef.current.files[0].name
         : null,
@@ -879,19 +970,38 @@ function ChatRoom() {
             sender: taggedMessage.sender,
           }
         : null,
-      // Add code-related properties if code mode is on
-      isCode: isCodeOn,
-      language: isCodeOn ? selectedLanguage : null,
+      isCode: isCodeOn
     };
 
-    // Add message to localStorage
-    const allMessages = JSON.parse(
-      localStorage.getItem("chatMessages") || "{}"
-    );
-    const roomMessages = allMessages[roomId] || [];
-    roomMessages.push(newMessage);
-    allMessages[roomId] = roomMessages;
-    localStorage.setItem("chatMessages", JSON.stringify(allMessages));
+    // Send via Socket.IO for real-time delivery
+    if (socketService.isConnected()) {
+      socketService.sendMessage(messageData);
+    } else {
+      // Fallback to REST API if Socket.IO is not connected
+      try {
+        const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+        const response = await fetch(`${apiUrl}/api/rooms/${roomId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user: authUser.username || authUser.email,
+            text: messageInput,
+            code: isCodeOn ? messageInput : null,
+            language: isCodeOn ? selectedLanguage : null
+          }),
+        });
+
+        if (response.ok) {
+          const newMessage = await response.json();
+          setMessages(prevMessages => [...prevMessages, newMessage]);
+        }
+      } catch (error) {
+        console.error('Error sending message:', error);
+        setError('Failed to send message');
+      }
+    }
 
     // Update last activity for this room
     const userRooms = JSON.parse(localStorage.getItem("joinedRooms") || "[]");
@@ -903,8 +1013,7 @@ function ChatRoom() {
     });
     localStorage.setItem("joinedRooms", JSON.stringify(updatedRooms));
 
-    // Update state
-    setMessages([...messages, newMessage]);
+    // Update state and UI
     prevMessagesLengthRef.current = messages.length + 1;
     setMessageInput("");
 
@@ -930,6 +1039,11 @@ function ChatRoom() {
   // Updated handle input change to detect mentions
   const handleInputChange = (e) => {
     const newValue = e.target.value;
+
+    // Send typing indicator
+    if (authUser && roomId && socketService.isConnected()) {
+      socketService.sendTyping(roomId, authUser, newValue.length > 0);
+    }
 
     // Special check for @ removal - explicitly handle this case
     if (messageInput.includes("@") && !newValue.includes("@")) {
