@@ -256,23 +256,22 @@ function Home() {
       const userColor = generateRandomColor();
 
       try {
-        const response = await fetch(`${apiUrl}/api/rooms`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name: pinString }),
-        });
-
-        if (response.ok) {
-          const roomData = await response.json();
+        // Try to get the room first (don't create)
+        const getResponse = await fetch(`${apiUrl}/api/rooms/${pinString}`);
+        
+        if (getResponse.ok) {
+          const roomData = await getResponse.json();
           room = {
             id: pinString,
-            createdBy: roomData.name,
-            isPrivate: false,
-            password: null,
-            participants: []
+            createdBy: roomData.createdBy,
+            isPrivate: roomData.isPrivate || false,
+            password: roomData.password,
+            participants: roomData.participants || [],
+            color: roomData.color
           };
+        } else if (getResponse.status === 404) {
+          // Room doesn't exist on backend, check localStorage
+          console.log('Room not found on backend, checking localStorage');
         }
       } catch (apiError) {
         console.log('Backend check failed, checking localStorage:', apiError);
@@ -302,14 +301,37 @@ function Home() {
         }
       }
 
-      // Add user to room participants if not already there
-      if (!room.participants || !room.participants.some((p) => p.username === username)) {
-        if (!room.participants) room.participants = [];
-        room.participants.push({
+      // Add user to room participants and update backend
+      if (room && !room.participants.some((p) => p.username === username)) {
+        const newParticipant = {
           username,
+          isCreator: false,
           joinedAt: new Date().toISOString(),
           color: userColor,
-        });
+        };
+        
+        // Add to room participants
+        room.participants.push(newParticipant);
+        
+        // Update room on backend if it exists there
+        try {
+          const updateResponse = await fetch(`${apiUrl}/api/rooms`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: pinString,
+              participants: [newParticipant]
+            }),
+          });
+          
+          if (updateResponse.ok) {
+            console.log('User added to room on backend');
+          }
+        } catch (updateError) {
+          console.log('Failed to update room on backend:', updateError);
+        }
         
         // Update localStorage if room was found there
         const rooms = JSON.parse(localStorage.getItem("chatRooms") || "{}");
@@ -317,23 +339,14 @@ function Home() {
           rooms[pinString] = room;
           localStorage.setItem("chatRooms", JSON.stringify(rooms));
         }
-      } else {
-        // User already exists in the room - retrieve their color
-        const existingUser = room.participants.find(
-          (p) => p.username === username
-        );
-        if (existingUser && existingUser.color) {
-          // Keep the existing user color
-          Object.assign(userColor, existingUser.color);
-        }
       }
 
       // Add room to user's joined rooms if not already there
       const userRooms = JSON.parse(localStorage.getItem("joinedRooms") || "[]");
-      if (!userRooms.some((r) => r.roomId === roomPin)) {
+      if (!userRooms.some((r) => r.roomId === pinString)) {
         userRooms.push({
-          roomId: roomPin,
-          name: `Room #${roomPin}`,
+          roomId: pinString,
+          name: `Room #${pinString}`,
           joinedAt: new Date().toISOString(),
           isPrivate: room.isPrivate,
           isCreator: room.createdBy === username,
@@ -347,14 +360,14 @@ function Home() {
         "chatUser",
         JSON.stringify({
           username,
-          roomId: roomPin,
+          roomId: pinString,
           joinedAt: new Date().toISOString(),
           color: userColor, // Store user's color
         })
       );
 
       // Navigate to room
-      navigate(`/room/${roomPin}`);
+      navigate(`/room/${pinString}`);
     } catch (err) {
       setError("Error joining room");
       console.error(err);
