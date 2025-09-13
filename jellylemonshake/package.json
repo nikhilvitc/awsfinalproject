@@ -5,8 +5,10 @@
   "keywords": [],
   "main": "src/index.tsx",
   "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
     "ajv": "^6.12.6",
     "ajv-keywords": "^3.5.2",
+    "emoji-picker-react": "^4.13.3",
     "framer-motion": "^10.16.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

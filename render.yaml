@@ -25,7 +25,7 @@ services:
     name: awsproject-frontend
     env: static
     plan: free
-    buildCommand: cd jellylemonshake && npm install && REACT_APP_API_URL=https://awsproject-backend.onrender.com npm run build
+    buildCommand: cd jellylemonshake && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && REACT_APP_API_URL=https://awsproject-backend.onrender.com npm run build
     staticPublishPath: jellylemonshake/build
     envVars:
       - key: REACT_APP_API_URL
