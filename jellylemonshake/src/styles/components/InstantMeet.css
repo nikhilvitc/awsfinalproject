@@ -1,0 +1,174 @@
+/* InstantMeet Component Styles */
+.instant-meet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.instant-meet-modal {
+  background: var(--background-dark);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.instant-meet-container {
+  padding: 2rem;
+}
+
+.instant-meet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.instant-meet-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.instant-meet-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.instant-meet-close:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.instant-meet-content {
+  margin-bottom: 2rem;
+}
+
+.instant-meet-description {
+  color: var(--text-color);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.instant-meet-options {
+  margin-bottom: 1.5rem;
+}
+
+.instant-meet-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background-light);
+}
+
+.instant-meet-option input[type="checkbox"] {
+  margin-right: 0.75rem;
+  transform: scale(1.2);
+}
+
+.instant-meet-option-label {
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 0.25rem;
+}
+
+.instant-meet-option-description {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.instant-meet-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.instant-meet-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.instant-meet-btn-cancel {
+  background: #f8f9fa;
+  color: #666;
+  border: 1px solid var(--border-color);
+}
+
+.instant-meet-btn-cancel:hover {
+  background: #e9ecef;
+}
+
+.instant-meet-btn-start {
+  background: #4caf50;
+  color: white;
+}
+
+.instant-meet-btn-start:hover {
+  background: #45a049;
+}
+
+.instant-meet-btn-start:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.instant-meet-error {
+  background: #fff5f5;
+  color: #e53e3e;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid #feb2b2;
+}
+
+.instant-meet-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.instant-meet-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #4caf50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
