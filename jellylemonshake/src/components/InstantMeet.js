@@ -7,6 +7,15 @@ function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Early return if user is not available
+  if (!user) {
+    return (
+      <div className="error-message">
+        Please log in to start a meeting.
+      </div>
+    );
+  }
+
   const startInstantMeeting = async () => {
     setLoading(true);
     setError('');
@@ -17,8 +26,8 @@ function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
         title: `Instant Meeting - ${roomId}`,
         description: 'Quick meeting started from chat room',
         roomId,
-        organizer: user.username,
-        participants: participants.map(p => p.username).filter(username => username !== user.username),
+        organizer: user.username || user.email,
+        participants: participants.map(p => p.username).filter(username => username !== (user.username || user.email)),
         scheduledTime: now.toISOString(),
         duration: 60, // Default 1 hour
         settings: {
@@ -95,12 +104,12 @@ function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
               <div className="participants-list">
                 <div className="participant-item organizer">
                   <div className="participant-avatar">
-                    {user.username.charAt(0).toUpperCase()}
+                    {(user.username || user.email || 'U').charAt(0).toUpperCase()}
                   </div>
-                  <span>{user.username} (You - Organizer)</span>
+                  <span>{user.username || user.email || 'User'} (You - Organizer)</span>
                 </div>
                 {participants
-                  .filter(p => p.username !== user.username)
+                  .filter(p => p.username !== (user.username || user.email))
                   .map(participant => (
                     <div key={participant.username} className="participant-item">
                       <div className="participant-avatar">

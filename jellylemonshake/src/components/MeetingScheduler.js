@@ -4,6 +4,16 @@ import '../styles/components/MeetingScheduler.css';
 
 function MeetingScheduler({ roomId, participants, onClose, onMeetingCreated }) {
   const { user } = useAuth();
+  
+  // Early return if user is not available
+  if (!user) {
+    return (
+      <div className="error-message">
+        Please log in to schedule a meeting.
+      </div>
+    );
+  }
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
