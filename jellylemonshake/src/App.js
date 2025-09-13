@@ -5,8 +5,8 @@ import {
   Route,
   useLocation,
 } from "react-router-dom";
-import { AnimatePresence } from "motion/react";
-import { motion } from "motion/react";
+import { AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { AuthProvider } from "./components/AuthContext";
 import Home from "./components/Home";
 import ChatRoom from "./components/ChatRoom";
