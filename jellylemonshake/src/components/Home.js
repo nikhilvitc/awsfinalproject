@@ -81,7 +81,7 @@ function Home() {
   }, [roomsExpanded]);
 /*sohamghosh-jellylemonshake-23bps1146 */
   // Function to handle room creation
-  const handleCreateRoom = (e) => {
+  const handleCreateRoom = async (e) => {
     e.preventDefault();
     if (!username.trim()) {
       setError("Username is required");
@@ -99,60 +99,85 @@ function Home() {
       const roomColor = generateRandomColor();
       const userColor = generateRandomColor();
 
-      // Create mock room data and store in localStorage
-      const newRoom = {
-        id: pin,
+      // Create room data
+      const roomData = {
+        name: pin,
         createdBy: username,
         isPrivate: isPrivate,
         password: isPrivate ? password : null,
-        createdAt: new Date().toISOString(),
-        color: roomColor, // Assign random color to room
-        participants: [
-          {
-            username,
-            isCreator: true,
-            color: userColor, // Assign random color to user
-          },
-        ],
+        color: roomColor,
+        participants: [{
+          username,
+          isCreator: true,
+          color: userColor,
+        }]
       };
 
-      // Save room to localStorage
-      const rooms = JSON.parse(localStorage.getItem("chatRooms") || "{}");
-      rooms[pin] = newRoom;
-      localStorage.setItem("chatRooms", JSON.stringify(rooms));
-
-      // Initialize empty messages array for this room
-      const allMessages = JSON.parse(
-        localStorage.getItem("chatMessages") || "{}"
-      );
-      allMessages[pin] = [];
-      localStorage.setItem("chatMessages", JSON.stringify(allMessages));
-
-      // Add room to user's joined rooms
-      const userRooms = JSON.parse(localStorage.getItem("joinedRooms") || "[]");
-      userRooms.push({
-        roomId: pin,
-        name: `Room #${pin}`,
-        joinedAt: new Date().toISOString(),
-        isPrivate: isPrivate,
-        isCreator: true,
-        lastActivity: new Date().toISOString(),
+      // Create room on backend
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const response = await fetch(`${apiUrl}/api/rooms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(roomData),
       });
-      localStorage.setItem("joinedRooms", JSON.stringify(userRooms));
 
-      // Store active user info including color
-      localStorage.setItem(
-        "chatUser",
-        JSON.stringify({
-          username,
+      if (response.ok) {
+        const createdRoom = await response.json();
+        
+        // Also save to localStorage for offline access
+        const rooms = JSON.parse(localStorage.getItem("chatRooms") || "{}");
+        rooms[pin] = {
+          id: pin,
+          createdBy: username,
+          isPrivate: isPrivate,
+          password: isPrivate ? password : null,
+          createdAt: new Date().toISOString(),
+          color: roomColor,
+          participants: [{
+            username,
+            isCreator: true,
+            color: userColor,
+          }],
+        };
+        localStorage.setItem("chatRooms", JSON.stringify(rooms));
+
+        // Initialize empty messages array for this room
+        const allMessages = JSON.parse(
+          localStorage.getItem("chatMessages") || "{}"
+        );
+        allMessages[pin] = [];
+        localStorage.setItem("chatMessages", JSON.stringify(allMessages));
+
+        // Add room to user's joined rooms
+        const userRooms = JSON.parse(localStorage.getItem("joinedRooms") || "[]");
+        userRooms.push({
           roomId: pin,
+          name: `Room #${pin}`,
           joinedAt: new Date().toISOString(),
-          color: userColor, // Store user's color
-        })
-      );
+          isPrivate: isPrivate,
+          isCreator: true,
+          lastActivity: new Date().toISOString(),
+        });
+        localStorage.setItem("joinedRooms", JSON.stringify(userRooms));
 
-      // Navigate to the room
-      navigate(`/room/${pin}`);
+        // Store active user info including color
+        localStorage.setItem(
+          "chatUser",
+          JSON.stringify({
+            username,
+            roomId: pin,
+            joinedAt: new Date().toISOString(),
+            color: userColor,
+          })
+        );
+
+        // Navigate to the room
+        navigate(`/room/${pin}`);
+      } else {
+        setError("Failed to create room on server");
+      }
     } catch (err) {
       setError("Error creating room");
       console.error(err);
@@ -209,7 +234,7 @@ function Home() {
   };
 
   // Function to handle joining a room
-  const handleJoinRoom = (e) => {
+  const handleJoinRoom = async (e) => {
     e.preventDefault();
     if (!username.trim()) {
       setError("Username is required");
@@ -225,13 +250,43 @@ function Home() {
       // Save preferred username
       localStorage.setItem("preferredUsername", username);
 
-      // Get rooms from localStorage
-      const rooms = JSON.parse(localStorage.getItem("chatRooms") || "{}");
-      const room = rooms[pinString];
+      // Check backend first for room
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      let room = null;
+      const userColor = generateRandomColor();
+
+      try {
+        const response = await fetch(`${apiUrl}/api/rooms`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: pinString }),
+        });
+
+        if (response.ok) {
+          const roomData = await response.json();
+          room = {
+            id: pinString,
+            createdBy: roomData.name,
+            isPrivate: false,
+            password: null,
+            participants: []
+          };
+        }
+      } catch (apiError) {
+        console.log('Backend check failed, checking localStorage:', apiError);
+      }
+
+      // Fallback to localStorage if backend fails
+      if (!room) {
+        const rooms = JSON.parse(localStorage.getItem("chatRooms") || "{}");
+        room = rooms[pinString];
+      }
 
       // Check if room exists
       if (!room) {
-        setError("Room not found");
+        setError("Room not found. Make sure the room PIN is correct.");
         return;
       }
 
@@ -247,25 +302,29 @@ function Home() {
         }
       }
 
-      // Generate a random color for the user
-      let userColor = generateRandomColor();
-
       // Add user to room participants if not already there
-      if (!room.participants.some((p) => p.username === username)) {
+      if (!room.participants || !room.participants.some((p) => p.username === username)) {
+        if (!room.participants) room.participants = [];
         room.participants.push({
           username,
           joinedAt: new Date().toISOString(),
-          color: userColor, // Assign color to new user
+          color: userColor,
         });
-        rooms[roomPin] = room;
-        localStorage.setItem("chatRooms", JSON.stringify(rooms));
+        
+        // Update localStorage if room was found there
+        const rooms = JSON.parse(localStorage.getItem("chatRooms") || "{}");
+        if (rooms[pinString]) {
+          rooms[pinString] = room;
+          localStorage.setItem("chatRooms", JSON.stringify(rooms));
+        }
       } else {
         // User already exists in the room - retrieve their color
         const existingUser = room.participants.find(
           (p) => p.username === username
         );
         if (existingUser && existingUser.color) {
-          userColor = existingUser.color;
+          // Keep the existing user color
+          Object.assign(userColor, existingUser.color);
         }
       }
 

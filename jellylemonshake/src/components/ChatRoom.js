@@ -242,6 +242,27 @@ function ChatRoom() {
   useEffect(() => {
     if (!authUser || !roomId) return;
 
+    // Load existing messages first
+    const loadMessages = async () => {
+      try {
+        const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+        const response = await fetch(`${apiUrl}/api/rooms/${roomId}/messages`);
+        
+        if (response.ok) {
+          const existingMessages = await response.json();
+          setMessages(existingMessages);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error loading messages:', error);
+        setError('Failed to load messages');
+        setLoading(false);
+      }
+    };
+
+    // Load messages and connect to Socket.IO
+    loadMessages();
+
     // Connect to Socket.IO
     socketService.connect();
     setSocketConnected(socketService.isConnected());
