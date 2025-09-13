@@ -1,0 +1,49 @@
+services:
+  # Backend API Service
+  - type: web
+    name: awsproject-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        fromDatabase:
+          name: mongodb-connection
+          property: connectionString
+      - key: JDOODLE_CLIENT_ID
+        sync: false
+      - key: JDOODLE_CLIENT_SECRET
+        sync: false
+    domains:
+      - awsproject-backend.onrender.com
+
+  # Frontend Static Site
+  - type: web
+    name: awsproject-frontend
+    env: static
+    region: oregon
+    plan: free
+    buildCommand: cd jellylemonshake && npm install && REACT_APP_API_URL=https://awsproject-backend.onrender.com npm run build
+    staticPublishPath: jellylemonshake/build
+    domains:
+      - awsproject.onrender.com
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://awsproject-backend.onrender.com
+      - key: NODE_ENV
+        value: production
+
+# Optional: Database (if you want to use Render's PostgreSQL instead of MongoDB Atlas)
+# databases:
+#   - name: awsproject-db
+#     databaseName: awsproject
+#     user: awsproject_user
+#     region: oregon
+#     plan: free
