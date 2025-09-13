@@ -17,6 +17,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 // Routes
 app.use('/api/rooms', require('./routes/chatrooms'));
 app.use('/api/jdoodle', require('./routes/jdoodle'));
+app.use('/meetings', require('./routes/meetings'));
 
 app.get('/', (req, res) => {
   res.send('Backend is running!');
