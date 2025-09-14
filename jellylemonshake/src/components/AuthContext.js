@@ -49,27 +49,69 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    setUser(data.user);
-    localStorage.removeItem('guestUser');
-    return data.user;
+    try {
+      // Add basic validation
+      if (!email || !password) {
+        throw new Error('Email and password are required');
+      }
+      
+      if (!email.includes('@')) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        console.error('Supabase login error:', error);
+        throw new Error(error.message || 'Login failed');
+      }
+      
+      setUser(data.user);
+      localStorage.removeItem('guestUser');
+      return data.user;
+    } catch (err) {
+      console.error('Login error:', err);
+      throw err;
+    }
   };
 
   const signup = async (email, password, displayName) => {
-    const { data, error } = await supabase.auth.signUp({ 
-      email, 
-      password,
-      options: {
-        data: {
-          display_name: displayName
-        }
+    try {
+      // Add basic validation
+      if (!email || !password) {
+        throw new Error('Email and password are required');
       }
-    });
-    if (error) throw error;
-    setUser(data.user);
-    localStorage.removeItem('guestUser');
-    return data.user;
+      
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+      }
+      
+      if (!email.includes('@')) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          data: {
+            display_name: displayName || email.split('@')[0]
+          }
+        }
+      });
+      
+      if (error) {
+        console.error('Supabase signup error:', error);
+        throw new Error(error.message || 'Signup failed');
+      }
+      
+      setUser(data.user);
+      localStorage.removeItem('guestUser');
+      return data.user;
+    } catch (err) {
+      console.error('Signup error:', err);
+      throw err;
+    }
   };
 
   const logout = async () => {

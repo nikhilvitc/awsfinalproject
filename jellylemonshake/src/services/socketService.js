@@ -9,25 +9,41 @@ class SocketService {
   connect() {
     if (!this.socket) {
       const serverUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      console.log('Connecting to Socket.IO server:', serverUrl);
       
       this.socket = io(serverUrl, {
         transports: ['websocket', 'polling'],
         upgrade: true,
-        rememberUpgrade: true
+        rememberUpgrade: true,
+        timeout: 20000,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+        maxReconnectionAttempts: 5
       });
 
       this.socket.on('connect', () => {
-        console.log('Connected to Socket.IO server');
+        console.log('✅ Connected to Socket.IO server');
         this.connected = true;
       });
 
-      this.socket.on('disconnect', () => {
-        console.log('Disconnected from Socket.IO server');
+      this.socket.on('disconnect', (reason) => {
+        console.log('❌ Disconnected from Socket.IO server:', reason);
         this.connected = false;
       });
 
       this.socket.on('connect_error', (error) => {
-        console.error('Socket.IO connection error:', error);
+        console.error('🔥 Socket.IO connection error:', error.message);
+        this.connected = false;
+      });
+
+      this.socket.on('reconnect', (attemptNumber) => {
+        console.log('🔄 Reconnected to Socket.IO server after', attemptNumber, 'attempts');
+        this.connected = true;
+      });
+
+      this.socket.on('reconnect_error', (error) => {
+        console.error('🔄❌ Reconnection failed:', error.message);
       });
     }
     return this.socket;
