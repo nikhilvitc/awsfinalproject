@@ -256,7 +256,7 @@ function Home() {
       const userColor = generateRandomColor();
 
       try {
-        // Try to get the room first (don't create)
+        // Try to get the room first
         const getResponse = await fetch(`${apiUrl}/api/rooms/${pinString}`);
         
         if (getResponse.ok) {
@@ -270,23 +270,54 @@ function Home() {
             color: roomData.color
           };
         } else if (getResponse.status === 404) {
-          // Room doesn't exist on backend, check localStorage
-          console.log('Room not found on backend, checking localStorage');
+          // Room doesn't exist on backend, try to create/join it
+          console.log('Room not found on backend, attempting to create/join');
+          
+          const createResponse = await fetch(`${apiUrl}/api/rooms`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: pinString,
+              createdBy: username,
+              isPrivate: false,
+              color: userColor,
+              participants: [{
+                username: username,
+                color: userColor,
+                isCreator: false // This user is joining, not creating
+              }]
+            }),
+          });
+
+          if (createResponse.ok) {
+            const roomData = await createResponse.json();
+            room = {
+              id: pinString,
+              createdBy: roomData.createdBy,
+              isPrivate: roomData.isPrivate || false,
+              password: roomData.password,
+              participants: roomData.participants || [],
+              color: roomData.color
+            };
+            console.log('Successfully joined/created room:', pinString);
+          }
         }
       } catch (apiError) {
         console.log('Backend check failed, checking localStorage:', apiError);
       }
 
-      // Fallback to localStorage if backend fails
+      // Check if room exists or was created
       if (!room) {
+        // If still no room after trying to create it, check localStorage as final fallback
         const rooms = JSON.parse(localStorage.getItem("chatRooms") || "{}");
         room = rooms[pinString];
-      }
-
-      // Check if room exists
-      if (!room) {
-        setError("Room not found. Make sure the room PIN is correct.");
-        return;
+        
+        if (!room) {
+          setError(`Room "${pinString}" not found. The room may not exist or there may be a connection issue. Try creating a new room with this PIN.`);
+          return;
+        }
       }
 
       // Check if room is private and verify password

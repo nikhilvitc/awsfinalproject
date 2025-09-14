@@ -10,6 +10,7 @@ router.post('/', async (req, res) => {
     let room = await ChatRoom.findOne({ name });
     if (!room) {
       // Create new room
+      console.log('Creating new room:', name);
       room = await ChatRoom.create({ 
         name,
         createdBy: createdBy || 'Anonymous',
@@ -18,8 +19,10 @@ router.post('/', async (req, res) => {
         color: color || '#007bff',
         participants: participants || []
       });
+      console.log('Room created successfully:', room._id);
     } else {
       // Room exists, add participant if provided
+      console.log('Room exists, adding participant if needed:', name);
       if (participants && participants.length > 0) {
         const newParticipant = participants[0];
         const existingParticipant = room.participants.find(p => p.username === newParticipant.username);
@@ -27,11 +30,15 @@ router.post('/', async (req, res) => {
         if (!existingParticipant) {
           room.participants.push(newParticipant);
           await room.save();
+          console.log('Participant added to existing room:', newParticipant.username);
+        } else {
+          console.log('Participant already exists in room:', newParticipant.username);
         }
       }
     }
     res.json(room);
   } catch (err) {
+    console.error('Error creating/joining room:', err);
     res.status(500).json({ error: err.message });
   }
 });
