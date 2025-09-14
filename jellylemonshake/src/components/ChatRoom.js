@@ -342,7 +342,14 @@ function ChatRoom() {
         if (messageExists) return prevMessages;
         
         // Add new message
-        return [...prevMessages, message];
+        const updatedMessages = [...prevMessages, message];
+        
+        // Also store in localStorage for persistence
+        const allMessages = JSON.parse(localStorage.getItem("chatMessages") || "{}");
+        allMessages[roomId] = updatedMessages;
+        localStorage.setItem("chatMessages", JSON.stringify(allMessages));
+        
+        return updatedMessages;
       });
     });
 
@@ -852,11 +859,57 @@ function ChatRoom() {
       });
       setAllRoomsParticipants(roomParticipantsMap);
 
-      // Get messages for this room
+      // Get messages for this room - first check localStorage, then backend
+      let roomMessages = [];
       const allMessages = JSON.parse(
         localStorage.getItem("chatMessages") || "{}"
       );
-      const roomMessages = allMessages[roomId] || [];
+      const localMessages = allMessages[roomId] || [];
+
+      // If no local messages or very few, try to fetch from backend
+      if (localMessages.length === 0) {
+        console.log('No local messages found, fetching from backend...');
+        try {
+          const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+          const messagesResponse = await fetch(`${apiUrl}/api/rooms/${roomId}/messages`);
+          
+          if (messagesResponse.ok) {
+            const backendMessages = await messagesResponse.json();
+            console.log('Fetched', backendMessages.length, 'messages from backend');
+            
+            if (backendMessages.length > 0) {
+              // Convert backend messages to frontend format
+              roomMessages = backendMessages.map(msg => ({
+                id: msg._id,
+                _id: msg._id,
+                text: msg.text || '',
+                code: msg.code || '',
+                language: msg.language || '',
+                output: msg.output || '',
+                user: msg.user,
+                timestamp: msg.createdAt || new Date().toISOString(),
+                createdAt: msg.createdAt || new Date().toISOString(),
+                room: roomId
+              }));
+              
+              // Save to localStorage for future use
+              allMessages[roomId] = roomMessages;
+              localStorage.setItem("chatMessages", JSON.stringify(allMessages));
+              console.log('Messages saved to localStorage');
+            }
+          } else {
+            console.log('No messages found in backend for this room');
+            roomMessages = localMessages;
+          }
+        } catch (error) {
+          console.error('Error fetching messages from backend:', error);
+          roomMessages = localMessages; // Fallback to local messages
+        }
+      } else {
+        console.log('Using', localMessages.length, 'local messages');
+        roomMessages = localMessages;
+      }
+
       setMessages(roomMessages);
       prevMessagesLengthRef.current = roomMessages.length;
 
