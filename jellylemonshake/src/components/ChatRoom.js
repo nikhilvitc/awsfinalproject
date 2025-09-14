@@ -419,7 +419,10 @@ function ChatRoom() {
 
     socketService.onError((error) => {
       console.error('Socket error:', error);
-      setError('Connection error: ' + error.message);
+      console.error('Socket error details:', JSON.stringify(error, null, 2));
+      console.error('Socket error message:', error.message);
+      console.error('Socket error type:', typeof error);
+      setError('Connection error: ' + (error.message || 'Unknown error'));
     });
 
     // Cleanup on unmount or room change
@@ -1218,7 +1221,12 @@ function ChatRoom() {
 
     const messageData = {
       roomId,
-      user: authUser.username || authUser.email || 'Anonymous',
+      user: {
+        username: authUser.username || authUser.email || 'Anonymous',
+        email: authUser.email,
+        name: authUser.name,
+        color: authUser.color || '#007bff'
+      },
       text: messageInput,
       code: isCodeOn ? messageInput : null,
       language: isCodeOn ? selectedLanguage : null,
