@@ -758,165 +758,200 @@ function ChatRoom() {
 
   // Initialize room data from localStorage
   useEffect(() => {
-    const userData = localStorage.getItem("chatUser");
+    const initializeRoom = async () => {
+      const userData = localStorage.getItem("chatUser");
 
-    if (!userData) {
-      navigate("/");
-      return;
-    }
-
-    const parsedUser = JSON.parse(userData);
-
-    // Assign a random color to the user if they don't have one
-    if (!parsedUser.color) {
-      parsedUser.color = generateRandomColor();
-      localStorage.setItem("chatUser", JSON.stringify(parsedUser));
-    }
-
-    if (parsedUser.roomId !== roomId) {
-      // Update the active room
-      localStorage.setItem(
-        "chatUser",
-        JSON.stringify({
-          ...parsedUser,
-          roomId,
-        })
-      );
-    }
-
-    setUser(parsedUser);
-
-    // Get all joined rooms
-    const userRooms = JSON.parse(localStorage.getItem("joinedRooms") || "[]");
-    setJoinedRooms(userRooms);
-
-    // Get room data from localStorage
-    const rooms = JSON.parse(localStorage.getItem("chatRooms") || "{}");
-    const room = rooms[roomId];
-
-    if (!room) {
-      setError("Room not found");
-      setLoading(false);
-      return;
-    }
-
-    // Assign a random color to the room if it doesn't have one
-    if (!room.color) {
-      room.color = generateRandomColor();
-      rooms[roomId] = room;
-      localStorage.setItem("chatRooms", JSON.stringify(rooms));
-    }
-
-    setRoomInfo(room);
-    setParticipants(room.participants);
-
-    // Get participants for all rooms
-    const roomParticipantsMap = {};
-    userRooms.forEach((userRoom) => {
-      const currentRoom = rooms[userRoom.roomId];
-      if (currentRoom && currentRoom.participants) {
-        roomParticipantsMap[userRoom.roomId] = currentRoom.participants;
-      }
-    });
-    setAllRoomsParticipants(roomParticipantsMap);
-
-    // Get messages for this room
-    const allMessages = JSON.parse(
-      localStorage.getItem("chatMessages") || "{}"
-    );
-    const roomMessages = allMessages[roomId] || [];
-    setMessages(roomMessages);
-    prevMessagesLengthRef.current = roomMessages.length;
-
-    // Initialize previous message counts for each room for unread tracking
-    const prevCounts = {};
-    userRooms.forEach((userRoom) => {
-      const roomMessages = allMessages[userRoom.roomId] || [];
-      prevCounts[userRoom.roomId] = roomMessages.length;
-    });
-    prevMessageCountsRef.current = prevCounts;
-
-    setLoading(false);
-
-    // Set up polling for new messages and participants (simulating real-time)
-    messagePollingRef.current = setInterval(() => {
-      const updatedMessages =
-        JSON.parse(localStorage.getItem("chatMessages") || "{}")[roomId] || [];
-
-      // IMPROVED: Check for new messages and set flag instead of directly scrolling
-      if (updatedMessages.length > prevMessagesLengthRef.current) {
-        setMessages(updatedMessages);
-        prevMessagesLengthRef.current = updatedMessages.length;
-        setMessagesUpdated(true);
+      if (!userData) {
+        navigate("/");
+        return;
       }
 
-      // Check for new messages in other rooms and track unread counts
+      const parsedUser = JSON.parse(userData);
+
+      // Assign a random color to the user if they don't have one
+      if (!parsedUser.color) {
+        parsedUser.color = generateRandomColor();
+        localStorage.setItem("chatUser", JSON.stringify(parsedUser));
+      }
+
+      if (parsedUser.roomId !== roomId) {
+        // Update the active room
+        localStorage.setItem(
+          "chatUser",
+          JSON.stringify({
+            ...parsedUser,
+            roomId,
+          })
+        );
+      }
+
+      setUser(parsedUser);
+
+      // Get all joined rooms
+      const userRooms = JSON.parse(localStorage.getItem("joinedRooms") || "[]");
+      setJoinedRooms(userRooms);
+
+      // Get room data from localStorage first
+      const rooms = JSON.parse(localStorage.getItem("chatRooms") || "{}");
+      let room = rooms[roomId];
+
+      // If not found in localStorage, try to fetch from backend
+      if (!room) {
+        console.log('Room not found in localStorage, checking backend...');
+        try {
+          const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+          const response = await fetch(`${apiUrl}/api/rooms/${roomId}`);
+          
+          if (response.ok) {
+            const roomData = await response.json();
+            room = {
+              id: roomId,
+              name: roomData.name,
+              createdBy: roomData.createdBy,
+              isPrivate: roomData.isPrivate || false,
+              password: roomData.password,
+              participants: roomData.participants || [],
+              color: roomData.color || generateRandomColor()
+            };
+            console.log('Room found in backend:', room);
+            
+            // Save to localStorage for future use
+            rooms[roomId] = room;
+            localStorage.setItem("chatRooms", JSON.stringify(rooms));
+          } else {
+            console.log('Room not found in backend either');
+          }
+        } catch (error) {
+          console.error('Error fetching room from backend:', error);
+        }
+      }
+
+      if (!room) {
+        setError("Room not found. The room may have been deleted or the PIN is incorrect.");
+        setLoading(false);
+        return;
+      }
+
+      // Assign a random color to the room if it doesn't have one
+      if (!room.color) {
+        room.color = generateRandomColor();
+        rooms[roomId] = room;
+        localStorage.setItem("chatRooms", JSON.stringify(rooms));
+      }
+
+      setRoomInfo(room);
+      setParticipants(room.participants);
+
+      // Get participants for all rooms
+      const roomParticipantsMap = {};
+      userRooms.forEach((userRoom) => {
+        const currentRoom = rooms[userRoom.roomId];
+        if (currentRoom && currentRoom.participants) {
+          roomParticipantsMap[userRoom.roomId] = currentRoom.participants;
+        }
+      });
+      setAllRoomsParticipants(roomParticipantsMap);
+
+      // Get messages for this room
       const allMessages = JSON.parse(
         localStorage.getItem("chatMessages") || "{}"
       );
-      joinedRooms.forEach((room) => {
-        if (room.roomId !== roomId) {
-          // Only for rooms other than current
-          const roomMessages = allMessages[room.roomId] || [];
-          const prevCount = prevMessageCountsRef.current[room.roomId] || 0;
+      const roomMessages = allMessages[roomId] || [];
+      setMessages(roomMessages);
+      prevMessagesLengthRef.current = roomMessages.length;
 
-          if (roomMessages.length > prevCount) {
-            // Increment unread count by the number of new messages
-            setUnreadCounts((prev) => ({
-              ...prev,
-              [room.roomId]:
-                (prev[room.roomId] || 0) + (roomMessages.length - prevCount),
-            }));
-
-            // Update the previous count reference
-            prevMessageCountsRef.current = {
-              ...prevMessageCountsRef.current,
-              [room.roomId]: roomMessages.length,
-            };
-          }
-        }
-      });
-
-      // Update participants for all rooms
-      const updatedRooms = JSON.parse(
-        localStorage.getItem("chatRooms") || "{}"
-      );
-
-      // Update active room participants
-      const updatedRoom = updatedRooms[roomId];
-      if (
-        updatedRoom &&
-        JSON.stringify(updatedRoom.participants) !==
-          JSON.stringify(participants)
-      ) {
-        setParticipants(updatedRoom.participants);
-      }
-
-      // Update all room participants
-      const updatedRoomParticipantsMap = {};
+      // Initialize previous message counts for each room for unread tracking
+      const prevCounts = {};
       userRooms.forEach((userRoom) => {
-        const currentRoom = updatedRooms[userRoom.roomId];
-        if (currentRoom && currentRoom.participants) {
-          updatedRoomParticipantsMap[userRoom.roomId] =
-            currentRoom.participants;
-        }
+        const roomMessages = allMessages[userRoom.roomId] || [];
+        prevCounts[userRoom.roomId] = roomMessages.length;
       });
-      setAllRoomsParticipants(updatedRoomParticipantsMap);
+      prevMessageCountsRef.current = prevCounts;
 
-      // Update joined rooms
-      const updatedUserRooms = JSON.parse(
-        localStorage.getItem("joinedRooms") || "[]"
-      );
-      if (JSON.stringify(updatedUserRooms) !== JSON.stringify(joinedRooms)) {
-        setJoinedRooms(updatedUserRooms);
-      }
-    }, 1000);
+      setLoading(false);
 
-    return () => {
-      if (messagePollingRef.current) {
-        clearInterval(messagePollingRef.current);
-      }
+      // Set up polling for new messages and participants (simulating real-time)
+      messagePollingRef.current = setInterval(() => {
+        const updatedMessages =
+          JSON.parse(localStorage.getItem("chatMessages") || "{}")[roomId] || [];
+
+        // IMPROVED: Check for new messages and set flag instead of directly scrolling
+        if (updatedMessages.length > prevMessagesLengthRef.current) {
+          setMessages(updatedMessages);
+          prevMessagesLengthRef.current = updatedMessages.length;
+          setMessagesUpdated(true);
+        }
+
+        // Check for new messages in other rooms and track unread counts
+        const allMessages = JSON.parse(
+          localStorage.getItem("chatMessages") || "{}"
+        );
+        joinedRooms.forEach((room) => {
+          if (room.roomId !== roomId) {
+            // Only for rooms other than current
+            const roomMessages = allMessages[room.roomId] || [];
+            const prevCount = prevMessageCountsRef.current[room.roomId] || 0;
+
+            if (roomMessages.length > prevCount) {
+              // Increment unread count by the number of new messages
+              setUnreadCounts((prev) => ({
+                ...prev,
+                [room.roomId]:
+                  (prev[room.roomId] || 0) + (roomMessages.length - prevCount),
+              }));
+
+              // Update the previous count reference
+              prevMessageCountsRef.current = {
+                ...prevMessageCountsRef.current,
+                [room.roomId]: roomMessages.length,
+              };
+            }
+          }
+        });
+
+        // Update participants for all rooms
+        const updatedRooms = JSON.parse(
+          localStorage.getItem("chatRooms") || "{}"
+        );
+
+        // Update active room participants
+        const updatedRoom = updatedRooms[roomId];
+        if (
+          updatedRoom &&
+          JSON.stringify(updatedRoom.participants) !==
+            JSON.stringify(participants)
+        ) {
+          setParticipants(updatedRoom.participants);
+        }
+
+        // Update all room participants
+        const updatedRoomParticipantsMap = {};
+        userRooms.forEach((userRoom) => {
+          const currentRoom = updatedRooms[userRoom.roomId];
+          if (currentRoom && currentRoom.participants) {
+            updatedRoomParticipantsMap[userRoom.roomId] =
+              currentRoom.participants;
+          }
+        });
+        setAllRoomsParticipants(updatedRoomParticipantsMap);
+
+        // Update joined rooms
+        const updatedUserRooms = JSON.parse(
+          localStorage.getItem("joinedRooms") || "[]"
+        );
+        if (JSON.stringify(updatedUserRooms) !== JSON.stringify(joinedRooms)) {
+          setJoinedRooms(updatedUserRooms);
+        }
+      }, 1000);
+
+      return () => {
+        if (messagePollingRef.current) {
+          clearInterval(messagePollingRef.current);
+        }
+      };
     };
+
+    initializeRoom();
   }, [roomId, navigate]);
 
   // Handle clicks outside panels
