@@ -20,7 +20,7 @@ class SocketService {
     console.log('Connecting to Socket.IO server:', serverUrl);
     
     this.socket = io(serverUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'], // Try polling first, then websocket
       upgrade: true,
       rememberUpgrade: false,
       timeout: 20000,
@@ -31,8 +31,9 @@ class SocketService {
       maxReconnectionAttempts: 5,
       forceNew: true,
       autoConnect: true,
-      secure: false, // Let Socket.IO handle this automatically
-      rejectUnauthorized: false
+      secure: true, // Use secure connection for HTTPS
+      rejectUnauthorized: false,
+      withCredentials: true
     });
 
     this.socket.on('connect', () => {
