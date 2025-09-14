@@ -21,6 +21,11 @@ router.post('/execute', async (req, res) => {
   
   try {
     console.log('🌐 Calling JDoodle API...');
+    console.log('🔑 Using credentials:', {
+      clientId: process.env.JDOODLE_CLIENT_ID?.substring(0, 8) + '...',
+      hasSecret: !!process.env.JDOODLE_CLIENT_SECRET
+    });
+    
     const jdoodleRes = await axios.post('https://api.jdoodle.com/v1/execute', {
       clientId: process.env.JDOODLE_CLIENT_ID,
       clientSecret: process.env.JDOODLE_CLIENT_SECRET,
