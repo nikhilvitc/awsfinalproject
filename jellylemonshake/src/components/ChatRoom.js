@@ -251,12 +251,48 @@ function ChatRoom() {
         if (response.ok) {
           const existingMessages = await response.json();
           setMessages(existingMessages);
-          setLoading(false);
+        } else if (response.status === 404) {
+          // Room doesn't exist yet, start with empty messages
+          console.log('Room not found, starting with empty messages');
+          setMessages([]);
+        } else {
+          // For other errors, try to create the room first
+          console.warn('Failed to load messages, attempting to create room...');
+          await createRoomIfNeeded();
+          setMessages([]);
         }
+        setLoading(false);
       } catch (error) {
         console.error('Error loading messages:', error);
-        setError('Failed to load messages');
+        // Fallback: start with empty messages and create room
+        setMessages([]);
         setLoading(false);
+        await createRoomIfNeeded();
+      }
+    };
+
+    const createRoomIfNeeded = async () => {
+      try {
+        const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+        await fetch(`${apiUrl}/api/rooms`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: roomId,
+            createdBy: authUser.username || authUser.email,
+            isPrivate: false,
+            color: '#007bff',
+            participants: [{
+              username: authUser.username || authUser.email,
+              color: '#007bff',
+              isCreator: true
+            }]
+          }),
+        });
+      } catch (error) {
+        console.error('Error creating room:', error);
       }
     };
 
