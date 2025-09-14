@@ -2244,7 +2244,8 @@ function ChatRoom() {
         setIsRunning(true);
         setRunOutput("");
         try {
-          const res = await fetch("http://localhost:5000/api/jdoodle/execute", {
+          const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+          const res = await fetch(`${apiUrl}/api/jdoodle/execute`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ code: codeToRun, language: runLanguage })
