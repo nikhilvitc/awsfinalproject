@@ -29,33 +29,17 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// MongoDB connection with fallback
+// MongoDB connection
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log('MongoDB connected (Primary)');
+    console.log('MongoDB connected successfully');
   } catch (error) {
-    console.error('Primary MongoDB connection failed:', error.message);
-    
-    // Try backup connection
-    if (process.env.MONGODB_URI_BACKUP) {
-      try {
-        await mongoose.connect(process.env.MONGODB_URI_BACKUP, {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-        });
-        console.log('MongoDB connected (Backup)');
-      } catch (backupError) {
-        console.error('Backup MongoDB connection also failed:', backupError.message);
-        process.exit(1);
-      }
-    } else {
-      console.error('No backup MongoDB URI available');
-      process.exit(1);
-    }
+    console.error('MongoDB connection failed:', error.message);
+    process.exit(1);
   }
 };
 
