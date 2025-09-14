@@ -4,7 +4,7 @@ import { useAuth } from "./AuthContext";
 import "../styles/components/UserProfile.css";
 
 const UserProfile = () => {
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
@@ -62,7 +62,7 @@ const UserProfile = () => {
     }
   };
 
-  if (!user) {
+  if (!isAuthenticated) {
     return (
       <div className="profile-container">
         <div className="profile-card">

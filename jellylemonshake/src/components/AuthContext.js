@@ -51,15 +51,20 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     try {
       // Add basic validation
-      if (!email || !password) {
+      if (!email?.trim() || !password?.trim()) {
         throw new Error('Email and password are required');
       }
       
-      if (!email.includes('@')) {
+      // Better email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
         throw new Error('Please enter a valid email address');
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email: email.trim(), 
+        password: password.trim() 
+      });
       
       if (error) {
         console.error('Supabase login error:', error);
@@ -75,10 +80,12 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const signup = async (email, password, displayName) => {
+  const signup = async ({ name, email, password }) => {
     try {
+      console.log('Signup called with:', { name, email, passwordLength: password?.length });
+      
       // Add basic validation
-      if (!email || !password) {
+      if (!email?.trim() || !password?.trim()) {
         throw new Error('Email and password are required');
       }
       
@@ -86,17 +93,20 @@ export function AuthProvider({ children }) {
         throw new Error('Password must be at least 6 characters long');
       }
       
-      if (!email.includes('@')) {
+      // Better email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
         throw new Error('Please enter a valid email address');
       }
 
       const { data, error } = await supabase.auth.signUp({ 
-        email, 
-        password,
+        email: email.trim(), 
+        password: password.trim(),
         options: {
           data: {
-            display_name: displayName || email.split('@')[0]
-          }
+            display_name: name?.trim() || email.trim().split('@')[0]
+          },
+          emailRedirectTo: `${window.location.origin}/`
         }
       });
       
@@ -105,9 +115,15 @@ export function AuthProvider({ children }) {
         throw new Error(error.message || 'Signup failed');
       }
       
+      // Don't automatically set user if email confirmation is required
+      if (data.user && !data.user.email_confirmed_at) {
+        // User needs to confirm email
+        return { user: data.user, needsEmailConfirmation: true };
+      }
+      
       setUser(data.user);
       localStorage.removeItem('guestUser');
-      return data.user;
+      return { user: data.user, needsEmailConfirmation: false };
     } catch (err) {
       console.error('Signup error:', err);
       throw err;
@@ -127,8 +143,10 @@ export function AuthProvider({ children }) {
     setUser(guestUser);
   };
 
+  const isAuthenticated = user && !user.isGuest;
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

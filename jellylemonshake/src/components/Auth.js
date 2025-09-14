@@ -17,8 +17,11 @@ export const Login = () => {
     setError("");
     setIsLoading(true);
 
-    if (!email || !password) {
-      setError("Please fill in all fields");
+    console.log('Login form values:', { email: email.trim(), password: password.trim(), emailLength: email.trim().length, passwordLength: password.trim().length });
+
+    // Temporary: Skip validation to test
+    if (email.trim().length === 0 || password.trim().length === 0) {
+      setError(`Email: "${email.trim()}" (${email.trim().length}) | Password: "${password.trim()}" (${password.trim().length}) - Please fill in all fields`);
       setIsLoading(false);
       return;
     }
@@ -102,6 +105,7 @@ export const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   const { signup } = useAuth();
   const navigate = useNavigate();
@@ -111,8 +115,35 @@ export const Register = () => {
     setError("");
     setIsLoading(true);
 
-    if (!name || !email || !password || !confirmPassword) {
-      setError("Please fill in all fields");
+    console.log('Register form values:', { 
+      name: name.trim(), 
+      email: email.trim(), 
+      password: password.trim(), 
+      confirmPassword: confirmPassword.trim(),
+      nameLength: name.trim().length,
+      emailLength: email.trim().length,
+      passwordLength: password.trim().length,
+      confirmPasswordLength: confirmPassword.trim().length
+    });
+
+    // Detailed validation with specific error messages
+    if (name.trim().length === 0) {
+      setError("Name is required");
+      setIsLoading(false);
+      return;
+    }
+    if (email.trim().length === 0) {
+      setError("Email is required");
+      setIsLoading(false);
+      return;
+    }
+    if (password.trim().length === 0) {
+      setError("Password is required");
+      setIsLoading(false);
+      return;
+    }
+    if (confirmPassword.trim().length === 0) {
+      setError("Please confirm your password");
       setIsLoading(false);
       return;
     }
@@ -124,11 +155,19 @@ export const Register = () => {
     }
 
     try {
-      const result = await signup(email, password, name);
-      if (result) {
+      const result = await signup({ name, email, password });
+      console.log('Signup result:', result);
+      
+      if (result.needsEmailConfirmation) {
+        setVerificationSent(true);
+        setError("");
+        console.log('Email verification sent');
+      } else if (result.user) {
+        console.log('User registered and logged in:', result.user);
         navigate("/");
       }
     } catch (err) {
+      console.error('Registration error:', err);
       setError(err.message || "An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
@@ -144,6 +183,12 @@ export const Register = () => {
         </p>
 
         {error && <div className="auth-error">{error}</div>}
+        
+        {verificationSent && (
+          <div className="auth-success">
+            ✅ Verification email sent! Please check your inbox and click the verification link to complete your registration.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">

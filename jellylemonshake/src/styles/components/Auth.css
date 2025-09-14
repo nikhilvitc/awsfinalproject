@@ -54,6 +54,16 @@
   font-size: 0.9rem;
 }
 
+.auth-success {
+  background-color: rgba(52, 199, 89, 0.1);
+  color: #34c759;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  border: 1px solid rgba(52, 199, 89, 0.2);
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;

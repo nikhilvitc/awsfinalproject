@@ -3,10 +3,10 @@ import { useAuth } from './AuthContext';
 import '../styles/components/MeetingScheduler.css';
 
 function MeetingScheduler({ roomId, participants, onClose, onMeetingCreated }) {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
-  // Early return if user is not available
-  if (!user) {
+  // Early return if user is not authenticated
+  if (!isAuthenticated) {
     return (
       <div className="error-message">
         Please log in to schedule a meeting.

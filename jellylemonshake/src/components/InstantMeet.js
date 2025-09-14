@@ -3,12 +3,12 @@ import { useAuth } from './AuthContext';
 import '../styles/components/InstantMeet.css';
 
 function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Early return if user is not available
-  if (!user) {
+  // Early return if user is not authenticated
+  if (!isAuthenticated) {
     return (
       <div className="error-message">
         Please log in to start a meeting.
