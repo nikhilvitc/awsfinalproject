@@ -60,17 +60,53 @@ router.get('/', async (req, res) => {
 
 // Get messages for a room
 router.get('/:roomId/messages', async (req, res) => {
-  const { roomId } = req.params;
-  const messages = await Message.find({ room: roomId }).sort({ createdAt: 1 });
-  res.json(messages);
+  try {
+    const { roomId } = req.params;
+    
+    // First find the room by name/pin to get the MongoDB ObjectId
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Then find messages using the room's ObjectId
+    const messages = await Message.find({ room: room._id }).sort({ createdAt: 1 });
+    res.json(messages);
+  } catch (err) {
+    console.error('Error fetching messages:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Post a message (text or code)
 router.post('/:roomId/messages', async (req, res) => {
-  const { roomId } = req.params;
-  const { user, text, code, language, output } = req.body;
-  const message = await Message.create({ room: roomId, user, text, code, language, output });
-  res.json(message);
+  try {
+    const { roomId } = req.params;
+    const { user, text, code, language, output } = req.body;
+    
+    // First find the room by name/pin to get the MongoDB ObjectId
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Create message with room's ObjectId
+    const message = await Message.create({ 
+      room: room._id, 
+      user, 
+      text, 
+      code, 
+      language, 
+      output 
+    });
+    
+    // Populate the room field in the response
+    await message.populate('room');
+    res.json(message);
+  } catch (err) {
+    console.error('Error creating message:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router; 

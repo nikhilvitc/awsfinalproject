@@ -116,9 +116,18 @@ io.on('connection', (socket) => {
     try {
       const { roomId, user, text, code, language, output } = data;
       
-      // Save message to database
+      // Find the room by name/pin to get the MongoDB ObjectId
+      const ChatRoom = require('./models/ChatRoom');
+      const room = await ChatRoom.findOne({ name: roomId });
+      
+      if (!room) {
+        socket.emit('error', { message: 'Room not found' });
+        return;
+      }
+      
+      // Save message to database using room's ObjectId
       const message = await Message.create({
-        room: roomId,
+        room: room._id,
         user: user.username || user.email,
         text,
         code,
