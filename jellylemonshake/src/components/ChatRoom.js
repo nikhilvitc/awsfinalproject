@@ -334,11 +334,19 @@ function ChatRoom() {
 
     // Join the room
     console.log('🏠 Joining room:', roomId, 'as user:', authUser?.username || authUser?.email);
-    socketService.joinRoom(roomId, authUser);
+    const userForSocket = {
+      username: authUser.username || authUser.email || 'Anonymous',
+      email: authUser.email,
+      name: authUser.name,
+      color: authUser.color || '#007bff'
+    };
+    socketService.joinRoom(roomId, userForSocket);
 
     // Set up event listeners
     socketService.onNewMessage((message) => {
       console.log('📨 New message received via Socket.IO:', message);
+      console.log('📨 Current room:', roomId, '| Message room:', message.room);
+      
       setMessages(prevMessages => {
         // Check if message already exists to prevent duplicates
         const messageExists = prevMessages.some(msg => msg._id === message._id || msg.id === message._id);
@@ -350,7 +358,7 @@ function ChatRoom() {
         // Ensure message has proper format
         const formattedMessage = {
           ...message,
-          id: message._id || message.id,
+          id: message._id || message.id || Date.now().toString(),
           user: message.user || message.sender,
           sender: message.user || message.sender,
           senderName: message.user || message.sender,
@@ -417,7 +425,13 @@ function ChatRoom() {
     // Cleanup on unmount or room change
     return () => {
       if (authUser && roomId) {
-        socketService.leaveRoom(roomId, authUser);
+        const userForSocket = {
+          username: authUser.username || authUser.email || 'Anonymous',
+          email: authUser.email,
+          name: authUser.name,
+          color: authUser.color || '#007bff'
+        };
+        socketService.leaveRoom(roomId, userForSocket);
       }
       socketService.removeAllListeners();
     };
@@ -425,19 +439,60 @@ function ChatRoom() {
 
   // Handle Socket.IO connection status
   useEffect(() => {
-    const checkConnection = setInterval(() => {
+    let connectionCheckInterval;
+    let reconnectTimeout;
+    
+    const checkAndReconnect = () => {
       const isConnected = socketService.isConnected();
       console.log('🔄 Socket connection status check:', isConnected);
       setSocketConnected(isConnected);
       
-      if (!isConnected) {
+      if (!isConnected && authUser && roomId) {
         console.log('⚠️ Socket disconnected, attempting to reconnect...');
-        socketService.connect();
+        
+        // Clear existing timeout
+        if (reconnectTimeout) {
+          clearTimeout(reconnectTimeout);
+        }
+        
+        // Try to reconnect after a delay
+        reconnectTimeout = setTimeout(() => {
+          try {
+            socketService.connect();
+            // Rejoin room after reconnection
+            setTimeout(() => {
+              if (socketService.isConnected()) {
+                const userForSocket = {
+                  username: authUser.username || authUser.email || 'Anonymous',
+                  email: authUser.email,
+                  name: authUser.name,
+                  color: authUser.color || '#007bff'
+                };
+                socketService.joinRoom(roomId, userForSocket);
+              }
+            }, 1000);
+          } catch (error) {
+            console.error('Failed to reconnect:', error);
+          }
+        }, 2000);
       }
-    }, 3000); // Check every 3 seconds
+    };
+    
+    // Check connection less frequently to reduce spam
+    connectionCheckInterval = setInterval(checkAndReconnect, 10000); // Check every 10 seconds
+    
+    // Initial check
+    checkAndReconnect();
 
-    return () => clearInterval(checkConnection);
-  }, []);
+    return () => {
+      if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+    };
+  }, [authUser, roomId]);
 
   // Handle clicks outside the user menu
   useEffect(() => {
@@ -1163,7 +1218,7 @@ function ChatRoom() {
 
     const messageData = {
       roomId,
-      user: authUser,
+      user: authUser.username || authUser.email || 'Anonymous',
       text: messageInput,
       code: isCodeOn ? messageInput : null,
       language: isCodeOn ? selectedLanguage : null,
@@ -1181,13 +1236,25 @@ function ChatRoom() {
       isCode: isCodeOn
     };
 
-    // Send via Socket.IO for real-time delivery
+    console.log('Attempting to send message:', messageData);
+
+    let messageSent = false;
+
+    // First try Socket.IO if connected
     if (socketService.isConnected()) {
-      console.log('Sending message via Socket.IO');
-      socketService.sendMessage(messageData);
-    } else {
-      // Fallback to REST API if Socket.IO is not connected
-      console.log('Socket.IO not connected, using REST API fallback');
+      try {
+        console.log('Sending message via Socket.IO');
+        socketService.sendMessage(messageData);
+        messageSent = true;
+        console.log('Message sent via Socket.IO');
+      } catch (error) {
+        console.error('Socket.IO send failed:', error);
+      }
+    }
+
+    // If Socket.IO failed or not connected, use REST API
+    if (!messageSent) {
+      console.log('Socket.IO not available, using REST API fallback');
       try {
         const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
         const response = await fetch(`${apiUrl}/api/rooms/${roomId}/messages`, {
@@ -1206,59 +1273,89 @@ function ChatRoom() {
 
         if (response.ok) {
           const newMessage = await response.json();
-          setMessages(prevMessages => [...prevMessages, newMessage]);
-          console.log('Message sent via REST API');
-        } else {
-          console.warn('REST API failed, adding message locally');
-          // If API fails, add message locally for better UX
-          const localMessage = {
-            _id: Date.now().toString(),
-            user: authUser.username || authUser.email || 'Anonymous',
-            text: messageInput,
-            code: isCodeOn ? messageInput : null,
-            language: isCodeOn ? selectedLanguage : null,
-            createdAt: new Date().toISOString(),
-            local: true // Mark as local message
+          // Format message for local display
+          const formattedMessage = {
+            ...newMessage,
+            id: newMessage._id,
+            user: newMessage.user,
+            sender: newMessage.user,
+            senderName: newMessage.user,
+            timestamp: newMessage.createdAt,
+            isCode: !!(newMessage.code || newMessage.language)
           };
-          setMessages(prevMessages => [...prevMessages, localMessage]);
+          
+          setMessages(prevMessages => {
+            // Check if message already exists
+            const exists = prevMessages.some(msg => msg._id === newMessage._id || msg.id === newMessage._id);
+            if (!exists) {
+              return [...prevMessages, formattedMessage];
+            }
+            return prevMessages;
+          });
+          
+          console.log('Message sent via REST API');
+          messageSent = true;
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
       } catch (error) {
-        console.error('Error sending message:', error);
-        setError('Failed to send message');
+        console.error('REST API failed:', error);
+        setError(`Failed to send message: ${error.message}`);
+        
+        // As last resort, add message locally
+        const localMessage = {
+          _id: Date.now().toString(),
+          id: Date.now().toString(),
+          user: authUser.username || authUser.email || 'Anonymous',
+          sender: authUser.username || authUser.email || 'Anonymous',
+          senderName: authUser.username || authUser.email || 'Anonymous',
+          text: messageInput,
+          code: isCodeOn ? messageInput : null,
+          language: isCodeOn ? selectedLanguage : null,
+          timestamp: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          local: true, // Mark as local message
+          isCode: isCodeOn
+        };
+        setMessages(prevMessages => [...prevMessages, localMessage]);
+        messageSent = true;
       }
     }
 
-    // Update last activity for this room
-    const userRooms = JSON.parse(localStorage.getItem("joinedRooms") || "[]");
-    const updatedRooms = userRooms.map((room) => {
-      if (room.roomId === roomId) {
-        return { ...room, lastActivity: new Date().toISOString() };
-      }
-      return room;
-    });
-    localStorage.setItem("joinedRooms", JSON.stringify(updatedRooms));
+    if (messageSent) {
+      // Update last activity for this room
+      const userRooms = JSON.parse(localStorage.getItem("joinedRooms") || "[]");
+      const updatedRooms = userRooms.map((room) => {
+        if (room.roomId === roomId) {
+          return { ...room, lastActivity: new Date().toISOString() };
+        }
+        return room;
+      });
+      localStorage.setItem("joinedRooms", JSON.stringify(updatedRooms));
 
-    // Update state and UI
-    prevMessagesLengthRef.current = messages.length + 1;
-    setMessageInput("");
+      // Update state and UI
+      prevMessagesLengthRef.current = messages.length + 1;
+      setMessageInput("");
+      setError(null); // Clear any previous errors
 
-    // Clear tagged message *after* the message is sent
-    setTaggedMessage(null);
+      // Clear tagged message *after* the message is sent
+      setTaggedMessage(null);
 
-    // Clear any file selections
-    if (fileInputRef.current) fileInputRef.current.value = "";
+      // Clear any file selections
+      if (fileInputRef.current) fileInputRef.current.value = "";
 
-    // Hide emoji picker and reset button states
-    setShowEmojiPicker(false);
-    setIsEmojiOn(false);
-    setIsCodeOn(false);
-    setShowLanguageSelector(false);
+      // Hide emoji picker and reset button states
+      setShowEmojiPicker(false);
+      setIsEmojiOn(false);
+      setIsCodeOn(false);
+      setShowLanguageSelector(false);
 
-    // Ensure we scroll to bottom after sending a message
-    setIsAtBottom(true);
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+      // Ensure we scroll to bottom after sending a message
+      setIsAtBottom(true);
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
   };
 
   // Updated handle input change to detect mentions

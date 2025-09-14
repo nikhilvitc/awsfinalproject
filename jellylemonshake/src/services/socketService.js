@@ -7,48 +7,76 @@ class SocketService {
   }
 
   connect() {
-    if (!this.socket) {
-      const serverUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
-      console.log('Connecting to Socket.IO server:', serverUrl);
-      
-      this.socket = io(serverUrl, {
-        transports: ['polling', 'websocket'],
-        upgrade: true,
-        rememberUpgrade: false,
-        timeout: 30000,
-        reconnection: true,
-        reconnectionDelay: 2000,
-        reconnectionDelayMax: 10000,
-        reconnectionAttempts: 10,
-        maxReconnectionAttempts: 10,
-        forceNew: false,
-        secure: true
-      });
-
-      this.socket.on('connect', () => {
-        console.log('✅ Connected to Socket.IO server');
-        this.connected = true;
-      });
-
-      this.socket.on('disconnect', (reason) => {
-        console.log('❌ Disconnected from Socket.IO server:', reason);
-        this.connected = false;
-      });
-
-      this.socket.on('connect_error', (error) => {
-        console.error('🔥 Socket.IO connection error:', error.message);
-        this.connected = false;
-      });
-
-      this.socket.on('reconnect', (attemptNumber) => {
-        console.log('🔄 Reconnected to Socket.IO server after', attemptNumber, 'attempts');
-        this.connected = true;
-      });
-
-      this.socket.on('reconnect_error', (error) => {
-        console.error('🔄❌ Reconnection failed:', error.message);
-      });
+    if (this.socket && this.socket.connected) {
+      console.log('Socket already connected');
+      return this.socket;
     }
+
+    if (this.socket) {
+      this.socket.disconnect();
+    }
+
+    const serverUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+    console.log('Connecting to Socket.IO server:', serverUrl);
+    
+    this.socket = io(serverUrl, {
+      transports: ['websocket', 'polling'],
+      upgrade: true,
+      rememberUpgrade: false,
+      timeout: 20000,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+      maxReconnectionAttempts: 5,
+      forceNew: true,
+      autoConnect: true,
+      secure: false, // Let Socket.IO handle this automatically
+      rejectUnauthorized: false
+    });
+
+    this.socket.on('connect', () => {
+      console.log('✅ Connected to Socket.IO server');
+      this.connected = true;
+    });
+
+    this.socket.on('disconnect', (reason) => {
+      console.log('❌ Disconnected from Socket.IO server:', reason);
+      this.connected = false;
+      
+      // Don't auto-reconnect on certain disconnect reasons
+      if (reason === 'io server disconnect') {
+        console.log('Server disconnected, manual reconnection needed');
+      }
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('🔥 Socket.IO connection error:', error.message);
+      this.connected = false;
+      
+      // Log more details about the error
+      console.error('Error details:', {
+        message: error.message,
+        description: error.description,
+        context: error.context,
+        type: error.type
+      });
+    });
+
+    this.socket.on('reconnect', (attemptNumber) => {
+      console.log('🔄 Reconnected to Socket.IO server after', attemptNumber, 'attempts');
+      this.connected = true;
+    });
+
+    this.socket.on('reconnect_error', (error) => {
+      console.error('🔄❌ Reconnection failed:', error.message);
+    });
+
+    this.socket.on('reconnect_failed', () => {
+      console.error('🔄❌ All reconnection attempts failed');
+      this.connected = false;
+    });
+
     return this.socket;
   }
 
@@ -74,10 +102,19 @@ class SocketService {
     }
   }
 
-  // Send a message
+  // Send a message with retry logic
   sendMessage(messageData) {
-    if (this.socket) {
-      this.socket.emit('send-message', messageData);
+    if (this.socket && this.socket.connected) {
+      try {
+        this.socket.emit('send-message', messageData);
+        return true;
+      } catch (error) {
+        console.error('Failed to send message via socket:', error);
+        return false;
+      }
+    } else {
+      console.warn('Socket not connected, cannot send message');
+      return false;
     }
   }
 

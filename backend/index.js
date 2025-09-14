@@ -12,20 +12,32 @@ const io = socketIo(server, {
     origin: [
       "http://localhost:3000",
       "https://awsproject-frontend.onrender.com",
-      "https://awsproject-t64b.onrender.com"
+      "https://awsproject-t64b.onrender.com",
+      "https://jellylemonshake-frontend.onrender.com", // Add any other frontend URLs
+      "*" // Allow all origins for now to debug
     ],
-    methods: ["GET", "POST"],
-    credentials: true
-  }
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"]
+  },
+  transports: ['websocket', 'polling'],
+  upgrade: true,
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 app.use(cors({
   origin: [
     "http://localhost:3000",
     "https://awsproject-frontend.onrender.com",
-    "https://awsproject-t64b.onrender.com"
+    "https://awsproject-t64b.onrender.com",
+    "https://jellylemonshake-frontend.onrender.com", // Add any other frontend URLs
+    "*" // Allow all origins for now to debug
   ],
-  credentials: true
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 app.use(express.json());
 
