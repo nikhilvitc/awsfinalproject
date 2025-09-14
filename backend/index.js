@@ -74,6 +74,10 @@ io.on('connection', (socket) => {
   // Join a room
   socket.on('join-room', async ({ roomId, user }) => {
     try {
+      console.log('=== JOIN ROOM REQUEST ===');
+      console.log('Room ID:', roomId);
+      console.log('User:', user);
+      
       socket.join(roomId);
       
       // Store user info
@@ -100,6 +104,8 @@ io.on('connection', (socket) => {
       // Send online users count to room
       io.to(roomId).emit('users-count', onlineUsers.length);
       
+      console.log('=== JOIN ROOM SUCCESS ===');
+      
     } catch (error) {
       console.error('Error joining room:', error);
       socket.emit('error', { message: 'Failed to join room' });
@@ -110,13 +116,50 @@ io.on('connection', (socket) => {
   socket.on('send-message', async (data) => {
     try {
       const { roomId, user, text, code, language, output } = data;
+      console.log('=== SOCKET.IO MESSAGE RECEIVED ===');
+      console.log('Room ID:', roomId);
+      console.log('User:', user);
+      console.log('Text:', text);
       
       // Find the room by name/pin to get the MongoDB ObjectId
       const ChatRoom = require('./models/ChatRoom');
       const room = await ChatRoom.findOne({ name: roomId });
       
       if (!room) {
-        socket.emit('error', { message: 'Room not found' });
+        console.log('Room not found, creating it...');
+        // Create the room if it doesn't exist
+        const newRoom = await ChatRoom.create({
+          name: roomId,
+          createdBy: user.username || user.email || 'Anonymous',
+          isPrivate: false,
+          color: '#007bff',
+          participants: []
+        });
+        console.log('Room created:', newRoom._id);
+        
+        // Save message to database using new room's ObjectId
+        const message = await Message.create({
+          room: newRoom._id,
+          user: user.username || user.email,
+          text,
+          code,
+          language,
+          output
+        });
+        
+        // Broadcast message to all users in the room
+        io.to(roomId).emit('new-message', {
+          _id: message._id,
+          room: message.room,
+          user: message.user,
+          text: message.text,
+          code: message.code,
+          language: message.language,
+          output: message.output,
+          createdAt: message.createdAt
+        });
+        
+        console.log(`Message sent in newly created room ${roomId}:`, text || 'Code snippet');
         return;
       }
       
@@ -146,7 +189,9 @@ io.on('connection', (socket) => {
       
     } catch (error) {
       console.error('Error sending message:', error);
-      socket.emit('error', { message: 'Failed to send message' });
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+      socket.emit('error', { message: 'Failed to send message', details: error.message });
     }
   });
 
