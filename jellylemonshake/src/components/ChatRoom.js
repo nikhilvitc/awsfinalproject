@@ -244,55 +244,83 @@ function ChatRoom() {
 
     // Load existing messages first
     const loadMessages = async () => {
+      setLoading(true);
+      setError(null);
+      
       try {
         const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
-        const response = await fetch(`${apiUrl}/api/rooms/${roomId}/messages`);
+        console.log('Loading messages for room:', roomId);
+        
+        const response = await fetch(`${apiUrl}/api/rooms/${roomId}/messages`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        });
         
         if (response.ok) {
           const existingMessages = await response.json();
-          setMessages(existingMessages);
+          console.log('Loaded messages:', existingMessages.length);
+          setMessages(Array.isArray(existingMessages) ? existingMessages : []);
         } else if (response.status === 404) {
-          // Room doesn't exist yet, start with empty messages
-          console.log('Room not found, starting with empty messages');
+          // Room doesn't exist yet, create it and start with empty messages
+          console.log('Room not found, creating room...');
+          await createRoomIfNeeded();
           setMessages([]);
         } else {
-          // For other errors, try to create the room first
-          console.warn('Failed to load messages, attempting to create room...');
+          // For server errors, try to create room and continue
+          console.warn('Server error loading messages, creating room as fallback...');
           await createRoomIfNeeded();
           setMessages([]);
         }
-        setLoading(false);
       } catch (error) {
-        console.error('Error loading messages:', error);
-        // Fallback: start with empty messages and create room
+        console.error('Network error loading messages:', error);
+        // Network error - still try to create room and continue with empty messages
+        try {
+          await createRoomIfNeeded();
+        } catch (createError) {
+          console.error('Also failed to create room:', createError);
+        }
         setMessages([]);
+      } finally {
         setLoading(false);
-        await createRoomIfNeeded();
       }
     };
 
     const createRoomIfNeeded = async () => {
       try {
         const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
-        await fetch(`${apiUrl}/api/rooms`, {
+        console.log('Creating room:', roomId);
+        
+        const response = await fetch(`${apiUrl}/api/rooms`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
           body: JSON.stringify({
             name: roomId,
-            createdBy: authUser.username || authUser.email,
+            createdBy: authUser.username || authUser.email || 'Anonymous',
             isPrivate: false,
             color: '#007bff',
             participants: [{
-              username: authUser.username || authUser.email,
+              username: authUser.username || authUser.email || 'Anonymous',
               color: '#007bff',
               isCreator: true
             }]
           }),
         });
+
+        if (response.ok) {
+          const roomData = await response.json();
+          console.log('Room created/joined successfully:', roomData.name);
+        } else {
+          console.warn('Failed to create room:', response.status);
+        }
       } catch (error) {
         console.error('Error creating room:', error);
+        // Don't throw - let the app continue even if room creation fails
       }
     };
 
@@ -1038,18 +1066,21 @@ function ChatRoom() {
 
     // Send via Socket.IO for real-time delivery
     if (socketService.isConnected()) {
+      console.log('Sending message via Socket.IO');
       socketService.sendMessage(messageData);
     } else {
       // Fallback to REST API if Socket.IO is not connected
+      console.log('Socket.IO not connected, using REST API fallback');
       try {
         const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
         const response = await fetch(`${apiUrl}/api/rooms/${roomId}/messages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
           body: JSON.stringify({
-            user: authUser ? (authUser.username || authUser.email) : 'Anonymous',
+            user: authUser.username || authUser.email || 'Anonymous',
             text: messageInput,
             code: isCodeOn ? messageInput : null,
             language: isCodeOn ? selectedLanguage : null
@@ -1059,6 +1090,20 @@ function ChatRoom() {
         if (response.ok) {
           const newMessage = await response.json();
           setMessages(prevMessages => [...prevMessages, newMessage]);
+          console.log('Message sent via REST API');
+        } else {
+          console.warn('REST API failed, adding message locally');
+          // If API fails, add message locally for better UX
+          const localMessage = {
+            _id: Date.now().toString(),
+            user: authUser.username || authUser.email || 'Anonymous',
+            text: messageInput,
+            code: isCodeOn ? messageInput : null,
+            language: isCodeOn ? selectedLanguage : null,
+            createdAt: new Date().toISOString(),
+            local: true // Mark as local message
+          };
+          setMessages(prevMessages => [...prevMessages, localMessage]);
         }
       } catch (error) {
         console.error('Error sending message:', error);
@@ -1867,6 +1912,14 @@ function ChatRoom() {
             {roomInfo?.isPrivate && (
               <span className="private-badge">Private</span>
             )}
+            {/* Connection Status Indicator */}
+            <span 
+              className={`connection-status ${socketConnected ? 'connected' : 'disconnected'}`}
+              title={socketConnected ? 'Connected to real-time chat' : 'Connecting...'}
+            >
+              <span className="status-dot"></span>
+              {socketConnected ? 'Online' : 'Connecting...'}
+            </span>
             {/* Add save room button here */}
             {isAuthenticated && (
               <button

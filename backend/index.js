@@ -214,6 +214,11 @@ app.get('/', (req, res) => {
   res.send('Backend is running!');
 });
 
+// Simple test endpoint
+app.get('/test', (req, res) => {
+  res.json({ message: 'Test endpoint working', timestamp: new Date().toISOString() });
+});
+
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
   res.status(200).json({ 

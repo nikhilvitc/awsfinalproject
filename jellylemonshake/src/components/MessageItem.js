@@ -257,7 +257,7 @@ function MessageItem({
         isHovered ? "hovered" : ""
       } ${isHighlighted ? "highlighted" : ""} ${
         isActiveHighlight ? "active-highlight" : ""
-      }`}
+      } ${message.local ? "local" : ""}`}
       onMouseEnter={() => onMouseEnter(messageId)}
       onMouseLeave={onMouseLeave}
     >
