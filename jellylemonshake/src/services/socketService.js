@@ -12,14 +12,17 @@ class SocketService {
       console.log('Connecting to Socket.IO server:', serverUrl);
       
       this.socket = io(serverUrl, {
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
         upgrade: true,
-        rememberUpgrade: true,
-        timeout: 20000,
+        rememberUpgrade: false,
+        timeout: 30000,
         reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
-        maxReconnectionAttempts: 5
+        reconnectionDelay: 2000,
+        reconnectionDelayMax: 10000,
+        reconnectionAttempts: 10,
+        maxReconnectionAttempts: 10,
+        forceNew: false,
+        secure: true
       });
 
       this.socket.on('connect', () => {

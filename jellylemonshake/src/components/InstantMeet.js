@@ -53,7 +53,7 @@ function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
 
       if (data.success) {
         // Immediately set meeting status to active since it's an instant meeting
-        await fetch(`${apiUrl}/meetings/${data.meeting.id}/status`, {
+        await fetch(`${apiUrl}/meetings/${data.meeting.meetingId}/status`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json'

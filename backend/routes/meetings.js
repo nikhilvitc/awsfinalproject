@@ -31,6 +31,7 @@ router.post('/create', async (req, res) => {
     const meetingUrl = `https://meet.example.com/room/${meetingId}`;
 
     const meeting = new Meeting({
+      meetingId,
       title,
       description,
       roomId,
@@ -58,6 +59,7 @@ router.post('/create', async (req, res) => {
       message: 'Meeting created successfully',
       meeting: {
         id: meeting._id,
+        meetingId: meeting.meetingId,
         title: meeting.title,
         description: meeting.description,
         roomId: meeting.roomId,
