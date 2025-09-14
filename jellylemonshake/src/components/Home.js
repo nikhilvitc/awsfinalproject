@@ -257,6 +257,7 @@ function Home() {
 
       try {
         // Try to get the room first
+        console.log('Attempting to join room:', pinString, 'as user:', username);
         const getResponse = await fetch(`${apiUrl}/api/rooms/${pinString}`);
         
         if (getResponse.ok) {
@@ -269,6 +270,36 @@ function Home() {
             participants: roomData.participants || [],
             color: roomData.color
           };
+          
+          // Add current user to the room if they're not already in it
+          const existingParticipant = room.participants.find(p => p.username === username);
+          if (!existingParticipant) {
+            console.log('Adding user to existing room:', pinString);
+            const joinResponse = await fetch(`${apiUrl}/api/rooms`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                name: pinString,
+                participants: [{
+                  username: username,
+                  color: userColor,
+                  isCreator: false
+                }]
+              }),
+            });
+
+            if (joinResponse.ok) {
+              const updatedRoomData = await joinResponse.json();
+              room.participants = updatedRoomData.participants;
+              console.log('Successfully joined existing room:', pinString);
+            } else {
+              console.warn('Failed to join existing room:', joinResponse.status);
+            }
+          } else {
+            console.log('User already in room:', pinString);
+          }
         } else if (getResponse.status === 404) {
           // Room doesn't exist on backend, try to create/join it
           console.log('Room not found on backend, attempting to create/join');
@@ -286,7 +317,7 @@ function Home() {
               participants: [{
                 username: username,
                 color: userColor,
-                isCreator: false // This user is joining, not creating
+                isCreator: true // This user is creating the room since it didn't exist
               }]
             }),
           });
@@ -315,9 +346,14 @@ function Home() {
         room = rooms[pinString];
         
         if (!room) {
+          console.error('Room not found anywhere:', pinString);
           setError(`Room "${pinString}" not found. The room may not exist or there may be a connection issue. Try creating a new room with this PIN.`);
           return;
+        } else {
+          console.log('Room found in localStorage:', room);
         }
+      } else {
+        console.log('Room found/created successfully:', room);
       }
 
       // Check if room is private and verify password
