@@ -93,8 +93,7 @@ const UserProfile = () => {
               <img src={avatar} alt="Profile" className="profile-image" />
             ) : (
               <div className="profile-image-placeholder">
-                {name.charAt(0).toUpperCase() ||
-                  user.email.charAt(0).toUpperCase()}
+                {(name || user?.email || user?.user_metadata?.display_name || 'U').charAt(0).toUpperCase()}
               </div>
             )}
           </div>

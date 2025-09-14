@@ -9,6 +9,14 @@ const Navbar = () => {
   const menuRef = useRef(null);
   const navigate = useNavigate();
 
+  // Debug logging
+  useEffect(() => {
+    if (user) {
+      console.log('Navbar user object:', user);
+      console.log('User properties:', Object.keys(user));
+    }
+  }, [user]);
+
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -74,15 +82,15 @@ const Navbar = () => {
                   />
                 ) : (
                   <div className="navbar-avatar-placeholder">
-                    {user.name.charAt(0).toUpperCase()}
+                    {(user?.name || user?.email || user?.user_metadata?.display_name || 'U').charAt(0).toUpperCase()}
                   </div>
                 )}
               </button>
               {userMenuOpen && (
                 <div className="user-dropdown-menu">
                   <div className="user-info-popup">
-                    <div className="user-name">{user.name}</div>
-                    <div className="user-email">{user.email}</div>
+                    <div className="user-name">{user?.name || user?.user_metadata?.display_name || user?.email || 'User'}</div>
+                    <div className="user-email">{user?.email || ''}</div>
                   </div>
                   <Link
                     to="/profile"
