@@ -62,15 +62,20 @@ router.get('/', async (req, res) => {
 router.get('/:roomId/messages', async (req, res) => {
   try {
     const { roomId } = req.params;
+    console.log('Fetching messages for room:', roomId);
     
     // First find the room by name/pin to get the MongoDB ObjectId
     const room = await ChatRoom.findOne({ name: roomId });
+    console.log('Found room:', room ? room._id : 'not found');
+    
     if (!room) {
-      return res.status(404).json({ error: 'Room not found' });
+      console.log('Room not found, returning empty array');
+      return res.json([]);
     }
     
     // Then find messages using the room's ObjectId
     const messages = await Message.find({ room: room._id }).sort({ createdAt: 1 });
+    console.log('Found messages:', messages.length);
     res.json(messages);
   } catch (err) {
     console.error('Error fetching messages:', err);
