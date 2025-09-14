@@ -270,7 +270,7 @@ function MessageItem({
             (isCurrentUser ? "var(--light-text)" : "var(--secondary-color)"),
         }}
       >
-        {message.senderName}
+        {message.user || message.senderName || "Anonymous"}
         {isCurrentUser && " (You)"}
       </div>
 

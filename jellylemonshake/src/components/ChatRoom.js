@@ -328,21 +328,40 @@ function ChatRoom() {
     loadMessages();
 
     // Connect to Socket.IO
+    console.log('🔌 Initializing Socket.IO connection...');
     socketService.connect();
     setSocketConnected(socketService.isConnected());
 
     // Join the room
+    console.log('🏠 Joining room:', roomId, 'as user:', authUser?.username || authUser?.email);
     socketService.joinRoom(roomId, authUser);
 
     // Set up event listeners
     socketService.onNewMessage((message) => {
+      console.log('📨 New message received via Socket.IO:', message);
       setMessages(prevMessages => {
         // Check if message already exists to prevent duplicates
-        const messageExists = prevMessages.some(msg => msg._id === message._id);
-        if (messageExists) return prevMessages;
+        const messageExists = prevMessages.some(msg => msg._id === message._id || msg.id === message._id);
+        if (messageExists) {
+          console.log('Message already exists, skipping duplicate');
+          return prevMessages;
+        }
+        
+        // Ensure message has proper format
+        const formattedMessage = {
+          ...message,
+          id: message._id || message.id,
+          user: message.user || message.sender,
+          sender: message.user || message.sender,
+          senderName: message.user || message.sender,
+          timestamp: message.createdAt || message.timestamp || new Date().toISOString(),
+          isCode: !!(message.code || message.language)
+        };
+        
+        console.log('💬 Adding formatted message:', formattedMessage);
         
         // Add new message
-        const updatedMessages = [...prevMessages, message];
+        const updatedMessages = [...prevMessages, formattedMessage];
         
         // Also store in localStorage for persistence
         const allMessages = JSON.parse(localStorage.getItem("chatMessages") || "{}");
@@ -407,8 +426,15 @@ function ChatRoom() {
   // Handle Socket.IO connection status
   useEffect(() => {
     const checkConnection = setInterval(() => {
-      setSocketConnected(socketService.isConnected());
-    }, 1000);
+      const isConnected = socketService.isConnected();
+      console.log('🔄 Socket connection status check:', isConnected);
+      setSocketConnected(isConnected);
+      
+      if (!isConnected) {
+        console.log('⚠️ Socket disconnected, attempting to reconnect...');
+        socketService.connect();
+      }
+    }, 3000); // Check every 3 seconds
 
     return () => clearInterval(checkConnection);
   }, []);
@@ -889,7 +915,10 @@ function ChatRoom() {
                 user: msg.user,
                 timestamp: msg.createdAt || new Date().toISOString(),
                 createdAt: msg.createdAt || new Date().toISOString(),
-                room: roomId
+                room: roomId,
+                isCode: !!(msg.code || msg.language),
+                sender: msg.user, // Add for compatibility
+                senderName: msg.user // Add for compatibility
               }));
               
               // Save to localStorage for future use
@@ -2257,7 +2286,7 @@ function ChatRoom() {
                   <MessageItem
                     key={index}
                     message={message}
-                    isCurrentUser={message.sender === user.username}
+                    isCurrentUser={message.user === (user.username || user.email || authUser.username || authUser.email)}
                     onTagMessage={handleTagMessage}
                     isHovered={
                       hoveredMessageId ===
