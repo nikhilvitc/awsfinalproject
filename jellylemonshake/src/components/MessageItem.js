@@ -113,64 +113,53 @@ function MessageItem({
     setShowOutput(true);
 
     try {
-      // Here we would send the actual code to a compiler API
       const codeToExecute = message.text;
+      console.log(`🚀 Executing ${message.language} code:`, codeToExecute);
 
-      // Simulate API call with timeout
-      setTimeout(() => {
-        // For JavaScript, we can actually execute it in the browser
-        if (message.language === "javascript") {
-          try {
-            // For demo purposes only
-            // eslint-disable-next-line no-new-func
-            const result = new Function(`
-              try {
-                return (function() {
-                  ${codeToExecute}
-                  return "Code executed successfully";
-                })();
-              } catch (error) {
-                return "Error: " + error.message;
-              }
-            `)();
-            setOutputLines([
-              { text: "Execution result:", type: "info" },
-              { text: result, type: "success" },
-            ]);
-          } catch (error) {
-            setOutputLines([
-              { text: "Execution error:", type: "error" },
-              { text: error.message, type: "error" },
-            ]);
-          }
-        } else {
-          // For other languages, we'd connect to a proper backend compiler
-          setOutputLines([
-            {
-              text: `Ready to execute ${message.language} code:`,
-              type: "info",
-            },
-            { text: codeToExecute.slice(0, 100) + "...", type: "info" },
-            {
-              text: "Compiler backend required for this language",
-              type: "info",
-            },
-            {
-              text: "Would you like to provide input for this program?",
-              type: "input",
-            },
-          ]);
-          setAwaitingInput(true);
-        }
-        setExecutingCode(false);
-      }, 1500);
-    } catch (error) {
-      setOutputLines((prev) => [
-        ...prev,
-        {
-          text: `Error executing code: ${error.message}`,
-          type: "error",
+      // Call the backend API for code execution
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const response = await fetch(`${apiUrl}/api/jdoodle/execute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          code: codeToExecute,
+          language: message.language
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('📋 Execution result:', result);
+
+      // Display the output
+      if (result.output) {
+        setOutputLines([
+          { text: `✅ Execution completed`, type: "success" },
+          { text: "Output:", type: "info" },
+          { text: result.output, type: "output" },
+          ...(result.memory ? [{ text: `Memory: ${result.memory}`, type: "info" }] : []),
+          ...(result.cpuTime ? [{ text: `CPU Time: ${result.cpuTime}`, type: "info" }] : [])
+        ]);
+      } else if (result.error) {
+        setOutputLines([
+          { text: "❌ Execution failed", type: "error" },
+          { text: result.error, type: "error" }
+        ]);
+      }
+
+      setExecutingCode(false);
+
+    } catch (error) {
+      console.error('Error executing code:', error);
+      setOutputLines([
+        { text: "❌ Error executing code", type: "error" },
+        { text: error.message, type: "error" },
+        { text: "Make sure the backend server is running and JDoodle API is configured.", type: "info" }
       ]);
       setExecutingCode(false);
     }
