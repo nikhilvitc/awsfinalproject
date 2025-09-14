@@ -15,7 +15,7 @@ const io = socketIo(server, {
       "https://awsproject-t64b.onrender.com",
       "https://jellylemonshake-frontend.onrender.com"
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"]
   },
@@ -35,7 +35,7 @@ app.use(cors({
     "https://jellylemonshake-frontend.onrender.com"
   ],
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 app.use(express.json());
