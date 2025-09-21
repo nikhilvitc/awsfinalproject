@@ -737,15 +737,15 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  transition: all var(--transition);
+  transition: all 0.3s ease-in-out;
 }
 
 .dialog-overlay.visible {
@@ -754,20 +754,33 @@
 }
 
 .dialog-overlay .form-container {
-  background: var(--bg-card);
-  border-radius: var(--border-radius-xl);
-  padding: var(--space-2xl);
-  box-shadow: var(--shadow-xl);
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   max-width: 600px;
   width: 95%;
   min-height: 500px;
   max-height: 90vh;
   overflow: visible;
   transform: scale(0.9);
-  transition: transform var(--transition);
+  transition: transform 0.3s ease-in-out;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.dialog-overlay .form-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4);
+  border-radius: 24px 24px 0 0;
 }
 
 .dialog-overlay.visible .form-container {
