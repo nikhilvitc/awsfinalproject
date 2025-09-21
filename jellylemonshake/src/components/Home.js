@@ -490,13 +490,25 @@ function Home() {
 
   const renderSelectView = () => (
     <div className={`home-header ${view !== "select" ? "hidden" : ""}`}>
-      <h1 className="home-title">Welcome to ChatApp</h1>
-      <p className="home-subtitle">Connect with friends and colleagues in real-time</p>
-      {user && !user.isGuest && (
-        <div className="user-welcome">
-          <p>Welcome back, {user.email || user.user_metadata?.display_name || 'User'}!</p>
-        </div>
-      )}
+      {/* Top Profile Section */}
+      <div className="profile-section">
+        {user && !user.isGuest && (
+          <div className="user-profile">
+            <div className="user-avatar">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div className="user-info">
+              <div className="user-name">
+                {user.user_metadata?.display_name || user.email?.split('@')[0] || 'User'}
+              </div>
+              <div className="user-email">{user.email}</div>
+            </div>
+          </div>
+        )}
+      </div>
       <div className="action-buttons">
         <button
           className="btn btn-primary"
