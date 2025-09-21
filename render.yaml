@@ -1,7 +1,7 @@
 services:
   # Backend API Service
   - type: web
-    name: awsproject-backend
+    name: awsfinalproject-backend
     env: node
     region: oregon
     plan: free
@@ -22,13 +22,13 @@ services:
 
   # Frontend Static Site
   - type: static
-    name: awsproject-frontend
+    name: awsfinalproject-frontend
     plan: free
-    buildCommand: cd jellylemonshake && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && REACT_APP_API_URL=https://awsproject-backend.onrender.com npm run build
+    buildCommand: cd jellylemonshake && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && REACT_APP_API_URL=https://awsfinalproject-backend.onrender.com npm run build
     staticPublishPath: jellylemonshake/build
     envVars:
       - key: REACT_APP_API_URL
-        value: https://awsproject-backend.onrender.com
+        value: https://awsfinalproject-backend.onrender.com
       - key: NODE_ENV
         value: production
       - key: CI
