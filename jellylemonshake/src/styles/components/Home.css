@@ -474,3 +474,316 @@
 .rooms-list-container::-webkit-scrollbar-thumb:hover {
   background: var(--text-light);
 }
+
+/* Missing Classes */
+.user-welcome {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary-color);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--space-lg);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.expand-icon {
+  transition: transform var(--transition);
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.home-room-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--space-sm);
+  transition: all var(--transition);
+  cursor: pointer;
+  background: var(--bg-card);
+}
+
+.home-room-item:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.home-room-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  flex: 1;
+}
+
+.home-room-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.home-room-details {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.private-badge {
+  background: var(--accent-color);
+  color: var(--text-white);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.private-badge.mini {
+  padding: 1px 4px;
+  font-size: 10px;
+}
+
+.private-badge.small {
+  padding: 2px 6px;
+  font-size: var(--font-size-xs);
+}
+
+.remove-room {
+  background: var(--error-color);
+  color: var(--text-white);
+  border: none;
+  border-radius: var(--border-radius);
+  padding: var(--space-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-size: var(--font-size-sm);
+}
+
+.remove-room:hover {
+  background: #dc2626;
+  transform: scale(1.05);
+}
+
+.join-new-room {
+  margin-top: var(--space-lg);
+  text-align: center;
+}
+
+.join-new-room-btn {
+  background: var(--primary-color);
+  color: var(--text-white);
+  border: none;
+  border-radius: var(--border-radius);
+  padding: var(--space-md) var(--space-lg);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-size: var(--font-size-sm);
+}
+
+.join-new-room-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.button-group {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: space-between;
+  margin-top: var(--space-xl);
+}
+
+.back-button {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--space-md) var(--space-lg);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-size: var(--font-size-base);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.back-button:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+.join-button {
+  background: var(--primary-color);
+  color: var(--text-white);
+  border: none;
+  border-radius: var(--border-radius);
+  padding: var(--space-md) var(--space-lg);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-size: var(--font-size-base);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.join-button:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.create-button {
+  background: var(--success-color);
+  color: var(--text-white);
+  border: none;
+  border-radius: var(--border-radius);
+  padding: var(--space-md) var(--space-lg);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-size: var(--font-size-base);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.create-button:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.pin-input-hidden {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+}
+
+.input-group {
+  margin-bottom: var(--space-lg);
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: var(--space-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.input-group input {
+  width: 100%;
+  padding: var(--space-md);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-base);
+  transition: all var(--transition);
+  background: var(--bg-primary);
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.rooms-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.no-rooms {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--text-secondary);
+}
+
+.mt-20 {
+  margin-top: var(--space-xl);
+}
+
+.rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.rooms-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+}
+
+.rooms-actions .action-buttons {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+}
+
+/* Dialog Overlay */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition);
+}
+
+.dialog-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.dialog-overlay .form-container {
+  background: var(--bg-card);
+  border-radius: var(--border-radius-xl);
+  padding: var(--space-2xl);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-color);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: scale(0.9);
+  transition: transform var(--transition);
+}
+
+.dialog-overlay.visible .form-container {
+  transform: scale(1);
+}
+
+/* Hidden class */
+.hidden {
+  display: none !important;
+}
+
+/* GitHub Profile Link */
+.github-profile-link {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all var(--transition);
+  z-index: 100;
+}
+
+.github-profile-link:hover {
+  color: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
+}
