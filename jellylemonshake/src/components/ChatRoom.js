@@ -901,12 +901,6 @@ function ChatRoom() {
     }, 0);
   };
 
-  // Handle language selection for code formatting
-  const handleLanguageSelect = (langId) => {
-    setSelectedLanguage(langId);
-    setShowLanguageSelector(false);
-  };
-
   // Initialize room data from localStorage
   useEffect(() => {
     const initializeRoom = async () => {
@@ -1288,6 +1282,69 @@ function ChatRoom() {
     }, 300); // Match the animation duration
   };
 
+  // Handle code button click
+  const handleCodeClick = () => {
+    setIsCodeOn(!isCodeOn);
+    if (!isCodeOn) {
+      setShowLanguageSelector(true);
+    } else {
+      setShowLanguageSelector(false);
+    }
+  };
+
+  // Handle language selection
+  const handleLanguageSelect = (languageId) => {
+    setSelectedLanguage(languageId);
+    setShowLanguageSelector(false);
+  };
+
+  // Handle emoji button click
+  const handleEmojiClick = () => {
+    setIsEmojiOn(!isEmojiOn);
+    setShowEmojiPicker(!showEmojiPicker);
+  };
+
+  // Handle attachment button click
+  const handleAttachmentClick = () => {
+    setIsAttachmentOn(!isAttachmentOn);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Insert emoji into message input
+  const insertEmoji = (emoji) => {
+    const input = messageInputRef.current;
+    if (input) {
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const text = messageInput;
+      const before = text.substring(0, start);
+      const after = text.substring(end);
+      const newText = before + emoji + after;
+      
+      setMessageInput(newText);
+      
+      // Set cursor position after emoji
+      setTimeout(() => {
+        input.selectionStart = input.selectionEnd = start + emoji.length;
+        input.focus();
+      }, 0);
+    }
+    
+    setShowEmojiPicker(false);
+    setIsEmojiOn(false);
+  };
+
+  // Handle file selection
+  const handleFileSelected = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      console.log('File selected:', file.name);
+      // You can add file upload logic here
+    }
+  };
+
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!messageInput.trim() && !fileInputRef.current?.files?.length) return;
@@ -1502,115 +1559,9 @@ function ChatRoom() {
     // Allow new line with Shift+Enter (default behavior)
   };
 
-  const handleAttachmentClick = () => {
-    setIsAttachmentOn(true);
-    fileInputRef.current.click();
-    // Reset when file is selected or dialog is closed
-    setTimeout(() => setIsAttachmentOn(false), 500);
-  };
 
-  const handleFileSelected = (e) => {
-    if (e.target.files.length > 0) {
-      // For a real application, you would upload the file to a server here
-      // For this demo, we'll just add the filename to the message
-      const file = e.target.files[0];
-      const formData = new FormData();
-      formData.append("attachment", file);
 
-      // Create a message with the file attachment
-      const newMessage = {
-        text: `Shared file: ${file.name}`,
-        sender: user.username,
-        senderName: user.username,
-        color: user.color, // Include user's color
-        timestamp: new Date().toISOString(),
-        attachment: file.name,
-        replyTo: taggedMessage
-          ? {
-              id:
-                taggedMessage.id || new Date(taggedMessage.timestamp).getTime(),
-              text: taggedMessage.text,
-              sender: taggedMessage.sender,
-            }
-          : null,
-      };
 
-      // Add message to localStorage
-      const allMessages = JSON.parse(
-        localStorage.getItem("chatMessages") || "{}"
-      );
-      const roomMessages = allMessages[roomId] || [];
-      roomMessages.push(newMessage);
-      allMessages[roomId] = roomMessages;
-      localStorage.setItem("chatMessages", JSON.stringify(allMessages));
-
-      // Update state
-      setMessages([...messages, newMessage]);
-      prevMessagesLengthRef.current = messages.length + 1;
-
-      // Clear tagged message
-      setTaggedMessage(null);
-
-      // Clear the file input
-      fileInputRef.current.value = "";
-
-      // Ensure we scroll to bottom after sending a file
-      setIsAtBottom(true);
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    }
-  };
-
-  const handleEmojiClick = (e) => {
-    // Add event parameter
-    e.stopPropagation();
-    if (showEmojiPicker) {
-      // Start exit animation
-      setEmojiPickerHiding(true);
-      setTimeout(() => {
-        setShowEmojiPicker(false);
-        setIsEmojiOn(false);
-        setEmojiPickerHiding(false);
-      }, 300); // Increased to ensure animation completes
-    } else {
-      setShowEmojiPicker(true);
-      setIsEmojiOn(true);
-      // Close other trays
-      setShowLanguageSelector(false);
-      setShowMentionList(false);
-    }
-  };
-
-  const insertEmoji = (emoji) => {
-    setMessageInput((prevInput) => prevInput + emoji);
-    // Don't close immediately to allow multiple emoji selection
-    if (messageInputRef.current) {
-      messageInputRef.current.focus();
-    }
-  };
-
-  const handleCodeClick = (e) => {
-    // Add event parameter and stop propagation
-    e.stopPropagation();
-
-    if (showLanguageSelector) {
-      // Start exit animation
-      setLanguageSelectorHiding(true);
-      setTimeout(() => {
-        setShowLanguageSelector(false);
-        setIsCodeOn(false);
-        setLanguageSelectorHiding(false);
-      }, 300); // Match the animation duration
-    } else {
-      setShowLanguageSelector(true);
-      setIsCodeOn(true);
-      // Close other trays
-      setShowEmojiPicker(false);
-      setIsEmojiOn(false);
-      setShowMentionList(false);
-    }
-  };
 
   // Function to leave room from the sidebar
   const handleLeaveRoomFromSidebar = (roomIdToLeave) => {
