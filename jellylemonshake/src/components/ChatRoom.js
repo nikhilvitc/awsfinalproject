@@ -29,6 +29,11 @@ function ChatRoom() {
     return null;
   }
 
+  // Helper function to get user identifier consistently
+  const getUserIdentifier = () => {
+    return authUser?.email || authUser?.username || 'Anonymous';
+  };
+
   // [All state variables and refs remain the same]
   const [user, setUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -317,7 +322,8 @@ function ChatRoom() {
         }
         
         const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
-        console.log('Creating room:', roomId, 'for user:', authUser.username || authUser.email);
+        const userIdentifier = getUserIdentifier();
+        console.log('Creating room:', roomId, 'for user:', userIdentifier);
         
         const response = await fetch(`${apiUrl}/api/rooms`, {
           method: 'POST',
@@ -327,12 +333,12 @@ function ChatRoom() {
           },
           body: JSON.stringify({
             name: roomId,
-            createdBy: authUser.username || authUser.email || 'Anonymous',
+            createdBy: userIdentifier,
             isPrivate: false,
             color: '#007bff',
-            admins: [authUser.username || authUser.email || 'Anonymous'],
+            admins: [userIdentifier],
             participants: [{
-              username: authUser.username || authUser.email || 'Anonymous',
+              username: userIdentifier,
               color: '#007bff',
               isCreator: true,
               isAdmin: true,
@@ -367,9 +373,10 @@ function ChatRoom() {
     setSocketConnected(socketService.isConnected());
 
     // Join the room
-    console.log('🏠 Joining room:', roomId, 'as user:', authUser?.username || authUser?.email);
+    const userIdentifier = getUserIdentifier();
+    console.log('🏠 Joining room:', roomId, 'as user:', userIdentifier);
     const userForSocket = {
-      username: authUser.username || authUser.email || 'Anonymous',
+      username: userIdentifier,
       email: authUser.email,
       name: authUser.name,
       color: authUser.color || '#007bff'
@@ -463,7 +470,7 @@ function ChatRoom() {
     return () => {
       if (authUser && roomId) {
         const userForSocket = {
-          username: authUser.username || authUser.email || 'Anonymous',
+          username: getUserIdentifier(),
           email: authUser.email,
           name: authUser.name,
           color: authUser.color || '#007bff'
@@ -500,7 +507,7 @@ function ChatRoom() {
             setTimeout(() => {
               if (socketService.isConnected()) {
                 const userForSocket = {
-                  username: authUser.username || authUser.email || 'Anonymous',
+                  username: getUserIdentifier(),
                   email: authUser.email,
                   name: authUser.name,
                   color: authUser.color || '#007bff'
@@ -1265,7 +1272,7 @@ function ChatRoom() {
     const messageData = {
       roomId,
       user: {
-        username: authUser.username || authUser.email || 'Anonymous',
+        username: getUserIdentifier(),
         email: authUser.email,
         name: authUser.name,
         color: authUser.color || '#007bff'
@@ -1315,7 +1322,7 @@ function ChatRoom() {
             'Accept': 'application/json',
           },
           body: JSON.stringify({
-            user: authUser.username || authUser.email || 'Anonymous',
+            user: getUserIdentifier(),
             text: messageInput,
             code: isCodeOn ? messageInput : null,
             language: isCodeOn ? selectedLanguage : null
@@ -1357,9 +1364,9 @@ function ChatRoom() {
         const localMessage = {
           _id: Date.now().toString(),
           id: Date.now().toString(),
-          user: authUser.username || authUser.email || 'Anonymous',
-          sender: authUser.username || authUser.email || 'Anonymous',
-          senderName: authUser.username || authUser.email || 'Anonymous',
+          user: getUserIdentifier(),
+          sender: getUserIdentifier(),
+          senderName: getUserIdentifier(),
           text: messageInput,
           code: isCodeOn ? messageInput : null,
           language: isCodeOn ? selectedLanguage : null,
@@ -2444,7 +2451,7 @@ function ChatRoom() {
                   <MessageItem
                     key={index}
                     message={message}
-                    isCurrentUser={message.user === (user.username || user.email || authUser.username || authUser.email)}
+                    isCurrentUser={message.user === (user?.username || user?.email || getUserIdentifier())}
                     onTagMessage={handleTagMessage}
                     isHovered={
                       hoveredMessageId ===

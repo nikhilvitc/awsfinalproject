@@ -145,9 +145,22 @@ router.get('/:roomName', async (req, res) => {
     }
     
     // Check if user is a member of the room
-    const isMember = room.participants.some(p => p.username === username) || 
-                    room.createdBy === username || 
-                    room.admins.includes(username);
+    const isParticipant = room.participants.some(p => p.username === username);
+    const isCreator = room.createdBy === username;
+    const isAdmin = room.admins.includes(username);
+    const isMember = isParticipant || isCreator || isAdmin;
+    
+    console.log('Room access check:', {
+      username,
+      roomName,
+      isParticipant,
+      isCreator,
+      isAdmin,
+      isMember,
+      participants: room.participants.map(p => p.username),
+      createdBy: room.createdBy,
+      admins: room.admins
+    });
     
     if (!isMember) {
       return res.status(403).json({ error: 'Access denied. You must be a member of this room.' });
@@ -205,9 +218,22 @@ router.get('/:roomId/messages', async (req, res) => {
     }
     
     // Check if user is a member of the room
-    const isMember = room.participants.some(p => p.username === username) || 
-                    room.createdBy === username || 
-                    room.admins.includes(username);
+    const isParticipant = room.participants.some(p => p.username === username);
+    const isCreator = room.createdBy === username;
+    const isAdmin = room.admins.includes(username);
+    const isMember = isParticipant || isCreator || isAdmin;
+    
+    console.log('Messages access check:', {
+      username,
+      roomId,
+      isParticipant,
+      isCreator,
+      isAdmin,
+      isMember,
+      participants: room.participants.map(p => p.username),
+      createdBy: room.createdBy,
+      admins: room.admins
+    });
     
     if (!isMember) {
       return res.status(403).json({ error: 'Access denied. You must be a member of this room.' });
