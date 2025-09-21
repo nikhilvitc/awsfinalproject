@@ -500,39 +500,66 @@ function Home() {
   };
 
   const renderSelectView = () => (
-    <div className={`home-options ${dialogVisible ? "hidden" : ""}`}>
-      <h1>Welcome to Chat Rooms</h1>
+    <div className={`home-header ${dialogVisible ? "hidden" : ""}`}>
+      <h1 className="home-title">Welcome to ChatApp</h1>
+      <p className="home-subtitle">Connect with friends and colleagues in real-time</p>
       {user && !user.isGuest && (
         <div className="user-welcome">
           <p>Welcome back, {user.email || user.user_metadata?.display_name || 'User'}!</p>
         </div>
       )}
-      <div className="options-container">
+      <div className="action-buttons">
         <button
-          className="option-button create"
+          className="btn btn-primary"
           onClick={() => showDialogView("create")}
         >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12h14"></path>
+          </svg>
           Create a Room
         </button>
         <button
-          className="option-button join"
+          className="btn btn-secondary"
           onClick={() => showDialogView("join")}
         >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="8.5" cy="7" r="4"></circle>
+            <line x1="20" y1="8" x2="20" y2="14"></line>
+            <line x1="23" y1="11" x2="17" y2="11"></line>
+          </svg>
           Join a Room
         </button>
         {joinedRooms.length > 0 && (
-          <div
-            className="option-button my-rooms"
+          <button
+            className="btn btn-accent"
             ref={myRoomsRef}
             onClick={toggleRoomsExpanded}
           >
-            <div className="my-rooms-header">
-              <div>
-                My Rooms{" "}
-                <span className="rooms-count">{joinedRooms.length}</span>
-              </div>
-              <span className="expand-icon">{roomsExpanded ? "▲" : "▼"}</span>
-            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9,22 9,12 15,12 15,22"></polyline>
+            </svg>
+            My Rooms ({joinedRooms.length})
+            <svg
+              className={`expand-icon ${roomsExpanded ? "expanded" : ""}`}
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <polyline points="6,9 12,15 18,9"></polyline>
+            </svg>
+          </button>
+        )}
+        
+        {joinedRooms.length > 0 && (
+          <div
+            className={`rooms-list-container ${roomsExpanded ? "expanded" : ""}`}
+            ref={myRoomsRef}
+          >
 
             <div
               className={`rooms-list-container ${
@@ -612,39 +639,54 @@ function Home() {
   );
 
   const renderCreateRoomView = () => (
-    <div>
-      <h1>Create a New Room</h1>
+    <div className="form-container">
+      <div className="home-header">
+        <h1 className="home-title">Create a New Room</h1>
+        <p className="home-subtitle">Set up your own chat room</p>
+      </div>
       {error && <div className="error-message">{error}</div>}
-      <form onSubmit={handleCreateRoom}>
-        <div className="input-group">
-          <label htmlFor="username">Your Username</label>
+      <form onSubmit={handleCreateRoom} className="auth-form">
+        <div className="form-group">
+          <label htmlFor="username" className="form-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            Your Username
+          </label>
           <input
             type="text"
             id="username"
             value={username}
+            className="form-input"
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Enter your display name"
             required
           />
         </div>
 
-        <div className="checkbox-group">
-          <input
-            type="checkbox"
-            id="isPrivate"
-            checked={isPrivate}
-            onChange={(e) => setIsPrivate(e.target.checked)}
-          />
-          <label htmlFor="isPrivate">Private Room (Password Protected)</label>
+        <div className="toggle-container">
+          <div className="toggle-switch" onClick={() => setIsPrivate(!isPrivate)}>
+            <div className={`toggle-slider ${isPrivate ? 'active' : ''}`}></div>
+          </div>
+          <label htmlFor="isPrivate" className="form-label">Private Room (Password Protected)</label>
         </div>
 
         {isPrivate && (
-          <div className="input-group">
-            <label htmlFor="password">Room Password</label>
+          <div className="form-group">
+            <label htmlFor="password" className="form-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <circle cx="12" cy="16" r="1"></circle>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              Room Password
+            </label>
             <input
               type="password"
               id="password"
               value={password}
+              className="form-input"
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter room password"
               required={isPrivate}
@@ -655,12 +697,18 @@ function Home() {
         <div className="button-group">
           <button
             type="button"
-            className="back-button"
+            className="btn btn-secondary"
             onClick={hideDialogView}
           >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"></path>
+            </svg>
             Back
           </button>
-          <button type="submit" className="create-button">
+          <button type="submit" className="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14"></path>
+            </svg>
             Create Room
           </button>
         </div>
@@ -669,30 +717,47 @@ function Home() {
   );
 /*sohamghosh-jellylemonshake-23bps1146 */
   const renderJoinRoomView = () => (
-    <div>
-      <h1>Join a Room</h1>
+    <div className="form-container">
+      <div className="home-header">
+        <h1 className="home-title">Join a Room</h1>
+        <p className="home-subtitle">Enter the room PIN to join</p>
+      </div>
       {error && <div className="error-message">{error}</div>}
-      <form onSubmit={handleJoinRoom}>
-        <div className="input-group">
-          <label htmlFor="join-username">Your Username</label>
+      <form onSubmit={handleJoinRoom} className="auth-form">
+        <div className="form-group">
+          <label htmlFor="join-username" className="form-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            Your Username
+          </label>
           <input
             type="text"
             id="join-username"
             value={username}
+            className="form-input"
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Enter your display name"
             required
           />
         </div>
 
-        <div className="input-group">
-          <label htmlFor="roomPin">Room PIN</label>
-          <div className="pin-container">
+        <div className="form-group">
+          <label htmlFor="roomPin" className="form-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <circle cx="12" cy="16" r="1"></circle>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            Room PIN
+          </label>
+          <div className="pin-input-container">
             {[0, 1, 2, 3].map((i) => (
               <input
                 key={i}
                 type="text"
-                className="pin-digit"
+                className="pin-input"
                 maxLength="1"
                 pattern="[0-9]"
                 inputMode="numeric"
@@ -856,9 +921,8 @@ function Home() {
   };
 
   return (
-    <div className="home-page">
-      <div className="home-background"></div>
-      <div className="home-container">
+    <div className="home-container">
+      <div className="home-content fade-in">
         {renderSelectView()}
 
         {/* Dialog overlay with click-outside-to-close functionality */}
