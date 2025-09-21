@@ -117,7 +117,7 @@ router.get('/:meetingId', async (req, res) => {
   try {
     const { meetingId } = req.params;
 
-    const meeting = await Meeting.findById(meetingId).select('-__v');
+    const meeting = await Meeting.findOne({ meetingId: meetingId }).select('-__v');
 
     if (!meeting) {
       return res.status(404).json({
@@ -153,8 +153,8 @@ router.patch('/:meetingId/status', async (req, res) => {
       });
     }
 
-    const meeting = await Meeting.findByIdAndUpdate(
-      meetingId,
+    const meeting = await Meeting.findOneAndUpdate(
+      { meetingId: meetingId },
       { status, updatedAt: Date.now() },
       { new: true }
     ).select('-__v');
@@ -186,7 +186,7 @@ router.delete('/:meetingId', async (req, res) => {
   try {
     const { meetingId } = req.params;
 
-    const meeting = await Meeting.findByIdAndDelete(meetingId);
+    const meeting = await Meeting.findOneAndDelete({ meetingId: meetingId });
 
     if (!meeting) {
       return res.status(404).json({
