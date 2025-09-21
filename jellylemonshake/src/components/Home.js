@@ -31,8 +31,10 @@ function Home() {
 
   // Function to show a dialog view with animation
   const showDialogView = (newView) => {
+    console.log('showDialogView called with:', newView);
     setDialogVisible(true);
     setView(newView);
+    console.log('Dialog should be visible now');
   };
 
   // Function to hide dialog and go back to select view
@@ -511,7 +513,10 @@ function Home() {
       <div className="action-buttons">
         <button
           className="btn btn-primary"
-          onClick={() => showDialogView("create")}
+          onClick={() => {
+            console.log('Create Room button clicked');
+            showDialogView("create");
+          }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14"></path>
@@ -929,8 +934,10 @@ function Home() {
         <div
           className={`dialog-overlay ${dialogVisible ? "visible" : ""}`}
           onClick={hideDialogView}
+          style={{ display: dialogVisible ? 'flex' : 'none' }}
         >
           <div className="form-container" onClick={(e) => e.stopPropagation()}>
+            {console.log('Current view:', view, 'Dialog visible:', dialogVisible)}
             {view === "create" && renderCreateRoomView()}
             {view === "join" && renderJoinRoomView()}
             {view === "myRooms" && renderMyRoomsView()}
