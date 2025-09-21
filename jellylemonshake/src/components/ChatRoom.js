@@ -1284,16 +1284,20 @@ function ChatRoom() {
 
   // Handle code button click
   const handleCodeClick = () => {
+    console.log('Code button clicked! Current isCodeOn:', isCodeOn);
     setIsCodeOn(!isCodeOn);
     if (!isCodeOn) {
+      console.log('Setting language selector to true');
       setShowLanguageSelector(true);
     } else {
+      console.log('Setting language selector to false');
       setShowLanguageSelector(false);
     }
   };
 
   // Handle language selection
   const handleLanguageSelect = (languageId) => {
+    console.log('Language selected:', languageId);
     setSelectedLanguage(languageId);
     setShowLanguageSelector(false);
   };
@@ -2504,6 +2508,7 @@ function ChatRoom() {
                       languageSelectorHiding ? "hiding" : ""
                     }`}
                     ref={languageSelectorRef}
+                    style={{ zIndex: 1001 }}
                   >
                     <div className="language-dropdown">
                       {codeLanguages.map((lang) => (
