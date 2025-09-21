@@ -503,6 +503,17 @@ function Home() {
           </div>
         )}
       </div>
+
+      {/* Welcome Section */}
+      <div className="welcome-section">
+        <h1 className="welcome-title">Welcome to ChatApp</h1>
+        <p className="welcome-subtitle">Connect with friends and colleagues in real-time</p>
+        {user && !user.isGuest && (
+          <div className="user-welcome">
+            <p>Welcome back, {user.email || user.user_metadata?.display_name || 'User'}!</p>
+          </div>
+        )}
+      </div>
       <div className="action-buttons">
         <button
           className="btn btn-primary"
