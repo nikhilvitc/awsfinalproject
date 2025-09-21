@@ -18,6 +18,9 @@ function AdminPanel({ roomId, onClose, isVisible }) {
   const [editingRoomName, setEditingRoomName] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [permissions, setPermissions] = useState({});
+  const [showInviteAdmin, setShowInviteAdmin] = useState(false);
+  const [inviteAdminEmail, setInviteAdminEmail] = useState('');
+  const [inviteAdminUsername, setInviteAdminUsername] = useState('');
 
   // Helper function to get user identifier consistently
   const getUserIdentifier = () => {
@@ -118,7 +121,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
         },
         body: JSON.stringify({ 
           username: username,
-          adminUsername: user.username || user.email 
+          adminUsername: getUserIdentifier()
         })
       });
 
@@ -127,7 +130,8 @@ function AdminPanel({ roomId, onClose, isVisible }) {
         loadRoomInfo(); // Refresh the list
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        setError('Failed to promote user');
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to promote user');
       }
     } catch (err) {
       setError('Error promoting user');
@@ -268,6 +272,45 @@ function AdminPanel({ roomId, onClose, isVisible }) {
     }
   };
 
+  // Invite new member as admin
+  const inviteMemberAsAdmin = async () => {
+    if (!inviteAdminEmail.trim() || !inviteAdminUsername.trim()) {
+      setError('Please provide both email and username');
+      return;
+    }
+
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      
+      const response = await fetch(`${apiUrl}/api/rooms/${roomId}/invite-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: inviteAdminUsername,
+          email: inviteAdminEmail,
+          invitedBy: getUserIdentifier()
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSuccess(data.message || `${inviteAdminUsername} invited as admin successfully`);
+        setInviteAdminEmail('');
+        setInviteAdminUsername('');
+        setShowInviteAdmin(false);
+        loadRoomInfo(); // Refresh the list
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to invite admin');
+      }
+    } catch (err) {
+      setError('Error inviting member as admin');
+    }
+  };
+
   if (!isVisible) return null;
 
   return (
@@ -358,6 +401,65 @@ function AdminPanel({ roomId, onClose, isVisible }) {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Invite Admin Section */}
+              {permissions.canManageAdmins && (
+                <div className="invite-admin-section">
+                  <div className="section-header">
+                    <h4>Invite New Admin</h4>
+                    <button 
+                      className="invite-admin-toggle"
+                      onClick={() => setShowInviteAdmin(!showInviteAdmin)}
+                    >
+                      {showInviteAdmin ? 'Cancel' : 'Invite Admin'}
+                    </button>
+                  </div>
+
+                  {showInviteAdmin && (
+                    <div className="invite-admin-form">
+                      <div className="form-group">
+                        <label>Username</label>
+                        <input
+                          type="text"
+                          value={inviteAdminUsername}
+                          onChange={(e) => setInviteAdminUsername(e.target.value)}
+                          placeholder="Enter username"
+                          className="invite-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Email</label>
+                        <input
+                          type="email"
+                          value={inviteAdminEmail}
+                          onChange={(e) => setInviteAdminEmail(e.target.value)}
+                          placeholder="Enter email address"
+                          className="invite-input"
+                        />
+                      </div>
+                      <div className="form-actions">
+                        <button 
+                          className="invite-button"
+                          onClick={inviteMemberAsAdmin}
+                          disabled={!inviteAdminUsername.trim() || !inviteAdminEmail.trim()}
+                        >
+                          Invite as Admin
+                        </button>
+                        <button 
+                          className="cancel-button"
+                          onClick={() => {
+                            setShowInviteAdmin(false);
+                            setInviteAdminEmail('');
+                            setInviteAdminUsername('');
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

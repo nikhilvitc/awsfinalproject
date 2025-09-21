@@ -825,4 +825,64 @@ router.get('/:roomId/permissions/:username', async (req, res) => {
   }
 });
 
+// Invite new member as admin
+router.post('/:roomId/invite-admin', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { username, email, invitedBy } = req.body;
+    
+    if (!username || !email || !invitedBy) {
+      return res.status(400).json({ error: 'Username, email, and invitedBy are required' });
+    }
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if inviter has permission to manage admins
+    if (!room.hasPermission(invitedBy, 'canManageAdmins')) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+    
+    // Check if user is already a member
+    const isAlreadyMember = room.participants.some(p => p.username === username) || 
+                           room.createdBy === username || 
+                           room.admins.includes(username);
+    
+    if (isAlreadyMember) {
+      return res.status(400).json({ error: 'User is already a member of this room' });
+    }
+    
+    // Add user as admin directly
+    const newAdmin = {
+      username: username,
+      isCreator: false,
+      isAdmin: true,
+      joinedAt: new Date(),
+      color: '#007bff',
+      permissions: {
+        canDeleteMessages: true,
+        canRemoveMembers: true,
+        canManageAdmins: true,
+        canEditRoomSettings: true
+      }
+    };
+    
+    room.participants.push(newAdmin);
+    room.admins.push(username);
+    
+    await room.save();
+    
+    res.json({ 
+      success: true, 
+      message: `${username} invited as admin successfully`,
+      admin: newAdmin
+    });
+  } catch (err) {
+    console.error('Error inviting admin:', err);
+    res.status(500).json({ error: 'Failed to invite admin' });
+  }
+});
+
 module.exports = router; 
