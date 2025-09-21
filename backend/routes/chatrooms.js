@@ -61,8 +61,15 @@ router.post('/', async (req, res) => {
         admins: [sanitizedCreatedBy],
         participants: allParticipants
       });
+      
+      // Ensure the room is properly saved and indexed
+      await room.save();
       console.log('Room created successfully:', room._id);
       console.log('Room name in DB:', room.name);
+      
+      // Verify the room can be found immediately after creation
+      const verifyRoom = await ChatRoom.findOne({ name: sanitizedName });
+      console.log('Room verification after creation:', verifyRoom ? 'SUCCESS' : 'FAILED');
     } else {
       // Room exists, add participant if provided
       console.log('Room exists, adding participant if needed:', name);
@@ -109,7 +116,19 @@ router.post('/:roomId/join', async (req, res) => {
     console.log('Room ID:', roomId);
     console.log('Username:', username);
     
-    const room = await ChatRoom.findOne({ name: sanitizedRoomId });
+    // Try to find room with multiple search strategies
+    let room = await ChatRoom.findOne({ name: sanitizedRoomId });
+    
+    // If not found, try case-insensitive search
+    if (!room) {
+      room = await ChatRoom.findOne({ name: { $regex: new RegExp(`^${sanitizedRoomId}$`, 'i') } });
+    }
+    
+    // If still not found, try with trimmed search
+    if (!room) {
+      room = await ChatRoom.findOne({ name: sanitizedRoomId.trim() });
+    }
+    
     console.log('Room found:', room ? 'YES' : 'NO');
     if (room) {
       console.log('Room details:', {
@@ -121,7 +140,20 @@ router.post('/:roomId/join', async (req, res) => {
     }
     
     if (!room) {
-      return res.status(404).json({ error: 'Room not found' });
+      // Try one more time with a small delay to handle potential timing issues
+      console.log('Room not found on first attempt, retrying...');
+      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+      
+      room = await ChatRoom.findOne({ name: sanitizedRoomId });
+      if (!room) {
+        room = await ChatRoom.findOne({ name: { $regex: new RegExp(`^${sanitizedRoomId}$`, 'i') } });
+      }
+      
+      if (!room) {
+        console.log('Room still not found after retry');
+        return res.status(404).json({ error: 'Room not found' });
+      }
+      console.log('Room found on retry!');
     }
     
     // Check if user is already a member

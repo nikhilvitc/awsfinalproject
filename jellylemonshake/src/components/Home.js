@@ -256,40 +256,55 @@ function Home() {
       const userColor = generateRandomColor();
 
       try {
-        // Use the new join endpoint
+        // Use the new join endpoint with retry mechanism
         console.log('Attempting to join room:', pinString, 'as user:', username);
-        const joinResponse = await fetch(`${apiUrl}/api/rooms/${pinString}/join`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            username: username,
-            password: roomPassword || undefined // Add password support if needed
-          }),
-        });
+        
+        let joinResponse;
+        let retryCount = 0;
+        const maxRetries = 2;
+        
+        while (retryCount <= maxRetries) {
+          joinResponse = await fetch(`${apiUrl}/api/rooms/${pinString}/join`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              username: username,
+              password: roomPassword || undefined // Add password support if needed
+            }),
+          });
 
-        if (joinResponse.ok) {
-          const joinData = await joinResponse.json();
-          room = {
-            id: pinString,
-            createdBy: joinData.room.createdBy,
-            isPrivate: joinData.room.isPrivate || false,
-            password: joinData.room.password,
-            participants: joinData.room.participants || [],
-            color: joinData.room.color
-          };
-          console.log('Successfully joined room:', pinString);
-        } else {
-          const errorData = await joinResponse.json();
-          if (joinResponse.status === 404) {
-            setError(`Room "${pinString}" not found. The room may not exist or there may be a connection issue. Try creating a new room with this PIN.`);
-          } else if (joinResponse.status === 403) {
-            setError(errorData.error || 'Access denied. You may need a password for this private room.');
+          if (joinResponse.ok) {
+            const joinData = await joinResponse.json();
+            room = {
+              id: pinString,
+              createdBy: joinData.room.createdBy,
+              isPrivate: joinData.room.isPrivate || false,
+              password: joinData.room.password,
+              participants: joinData.room.participants || [],
+              color: joinData.room.color
+            };
+            console.log('Successfully joined room:', pinString);
+            break; // Success, exit retry loop
+          } else if (joinResponse.status === 404 && retryCount < maxRetries) {
+            // Room not found, wait a bit and retry
+            console.log(`Room not found, retrying... (attempt ${retryCount + 1}/${maxRetries + 1})`);
+            await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+            retryCount++;
+            continue;
           } else {
-            setError(errorData.error || 'Failed to join room. Please try again.');
+            // Other errors or max retries reached
+            const errorData = await joinResponse.json();
+            if (joinResponse.status === 404) {
+              setError(`Room "${pinString}" not found. The room may not exist or there may be a connection issue. Try creating a new room with this PIN.`);
+            } else if (joinResponse.status === 403) {
+              setError(errorData.error || 'Access denied. You may need a password for this private room.');
+            } else {
+              setError(errorData.error || 'Failed to join room. Please try again.');
+            }
+            return;
           }
-          return;
         }
       } catch (apiError) {
         console.log('Backend check failed, checking localStorage:', apiError);
