@@ -1757,7 +1757,7 @@ function ChatRoom() {
 
   const copyRoomLink = () => {
     // Use the correct frontend URL instead of window.location.origin
-    const frontendUrl = process.env.REACT_APP_FRONTEND_URL || 'https://awsfinalproject-frontend.onrender.com';
+    const frontendUrl = process.env.REACT_APP_FRONTEND_URL || 'https://awsproject-frontend.onrender.com';
     const roomLink = `${frontendUrl}/room/${roomId}`;
     navigator.clipboard
       .writeText(roomLink)
