@@ -364,6 +364,13 @@ function ChatRoom() {
         const userIdentifier = getUserIdentifier();
         console.log('Creating room:', roomId, 'for user:', userIdentifier);
         
+        // First check if room already exists
+        const checkResponse = await fetch(`${apiUrl}/api/rooms/${roomId}?username=${userIdentifier}`);
+        if (checkResponse.ok) {
+          console.log('Room already exists, not creating duplicate');
+          return;
+        }
+        
         const response = await fetch(`${apiUrl}/api/rooms`, {
           method: 'POST',
           headers: {

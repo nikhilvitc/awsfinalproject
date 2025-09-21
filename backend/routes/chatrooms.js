@@ -825,6 +825,50 @@ router.get('/:roomId/permissions/:username', async (req, res) => {
   }
 });
 
+// Remove member from room (admin only)
+router.delete('/:roomId/members/:username', async (req, res) => {
+  try {
+    const { roomId, username: targetUsername } = req.params;
+    const { username: adminUsername } = req.body;
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if admin has permission
+    if (!room.hasPermission(adminUsername, 'canRemoveMembers')) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+    
+    // Can't remove the creator
+    if (targetUsername === room.createdBy) {
+      return res.status(400).json({ error: 'Cannot remove room creator' });
+    }
+    
+    // Can't remove yourself
+    if (targetUsername === adminUsername) {
+      return res.status(400).json({ error: 'Cannot remove yourself' });
+    }
+    
+    // Remove from participants
+    room.participants = room.participants.filter(p => p.username !== targetUsername);
+    
+    // Remove from admins if they were an admin
+    room.admins = room.admins.filter(admin => admin !== targetUsername);
+    
+    await room.save();
+    
+    res.json({ 
+      success: true, 
+      message: `${targetUsername} removed from room successfully`
+    });
+  } catch (err) {
+    console.error('Error removing member:', err);
+    res.status(500).json({ error: 'Failed to remove member' });
+  }
+});
+
 // Invite new member as admin
 router.post('/:roomId/invite-admin', async (req, res) => {
   try {

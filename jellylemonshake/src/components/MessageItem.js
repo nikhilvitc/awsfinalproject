@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
 import { dracula } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import { useAuth } from "./AuthContext";
 import "../styles/components/MessageItem.css";
 
 // Import language support
@@ -45,6 +46,7 @@ function MessageItem({
   onDeleteMessage,
   roomId,
 }) {
+  const { user, authUser } = useAuth();
   // Add state for copy button feedback
   const [copied, setCopied] = useState(false);
   // Add state for code/output toggle
@@ -53,6 +55,11 @@ function MessageItem({
   const [executingCode, setExecutingCode] = useState(false);
   // Add state for delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Helper function to get user identifier consistently
+  const getUserIdentifier = () => {
+    return authUser?.email || authUser?.username || user?.email || user?.username || 'Anonymous';
+  };
   // Add state to store code execution output
   const [outputLines, setOutputLines] = useState([]);
   // Add state for user input in terminal
@@ -209,7 +216,7 @@ function MessageItem({
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ 
-            username: message.user?.username || message.user || message.senderName || 'Anonymous'
+            username: getUserIdentifier()
           })
         });
 
