@@ -975,12 +975,18 @@ function ChatRoom() {
       setParticipants(room.participants);
       
       // Check if current user is admin
-      const currentUsername = authUser?.username || authUser?.email;
+      const currentUsername = getUserIdentifier();
       const isAdmin = room.createdBy === currentUsername || 
                      (room.admins && room.admins.includes(currentUsername)) ||
                      (room.participants && room.participants.some(p => 
                        p.username === currentUsername && p.isAdmin
                      ));
+      console.log('Admin check:', {
+        currentUsername,
+        createdBy: room.createdBy,
+        admins: room.admins,
+        isAdmin
+      });
       setIsUserAdmin(isAdmin);
 
       // Get participants for all rooms
@@ -2822,11 +2828,13 @@ function ChatRoom() {
         </div>
       )}
 
-      <AdminPanel
-        roomId={roomId}
-        onClose={() => setShowAdminPanel(false)}
-        isVisible={showAdminPanel}
-      />
+      {isUserAdmin && (
+        <AdminPanel
+          roomId={roomId}
+          onClose={() => setShowAdminPanel(false)}
+          isVisible={showAdminPanel}
+        />
+      )}
     </div>
   );
 }

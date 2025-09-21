@@ -3,13 +3,18 @@ import { useAuth } from './AuthContext';
 import '../styles/components/AdminPanel.css';
 
 function AdminPanel({ roomId, onClose, isVisible }) {
-  const { user } = useAuth();
+  const { user, authUser } = useAuth();
   const [activeTab, setActiveTab] = useState('members');
   const [members, setMembers] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Helper function to get user identifier consistently
+  const getUserIdentifier = () => {
+    return authUser?.email || authUser?.username || user?.email || user?.username || 'Anonymous';
+  };
 
   // Load room members and admin info
   useEffect(() => {
@@ -20,19 +25,28 @@ function AdminPanel({ roomId, onClose, isVisible }) {
 
   const loadRoomInfo = async () => {
     setLoading(true);
+    setError('');
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
-      const response = await fetch(`${apiUrl}/api/rooms/${roomId}/members?username=${user.username || user.email}`);
+      const username = getUserIdentifier();
+      console.log('Loading room info for:', roomId, 'as user:', username);
+      
+      const response = await fetch(`${apiUrl}/api/rooms/${roomId}/members?username=${username}`);
+      console.log('AdminPanel response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        setMembers(data.members);
-        setAdmins(data.admins);
+        console.log('AdminPanel data received:', data);
+        setMembers(data.members || []);
+        setAdmins(data.admins || []);
       } else {
-        setError('Failed to load room information');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('AdminPanel error response:', errorData);
+        setError(`Failed to load room information: ${errorData.error || 'Unknown error'}`);
       }
     } catch (err) {
-      setError('Error loading room information');
+      console.error('AdminPanel error:', err);
+      setError(`Error loading room information: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -46,7 +60,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ username: user.username || user.email })
+        body: JSON.stringify({ username: getUserIdentifier() })
       });
 
       if (response.ok) {
@@ -69,7 +83,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ username: user.username || user.email })
+          body: JSON.stringify({ username: getUserIdentifier() })
         });
 
         if (response.ok) {
@@ -120,7 +134,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ username: user.username || user.email })
+          body: JSON.stringify({ username: getUserIdentifier() })
         });
 
         if (response.ok) {
