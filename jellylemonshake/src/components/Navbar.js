@@ -119,10 +119,6 @@ const Navbar = () => {
         <div className="navbar-user">
           {isAuthenticated ? (
             <div className="user-menu-container" ref={menuRef}>
-              <div className="user-info">
-                <div className="user-name">{getUserDisplayName()}</div>
-                <div className="user-email">{user?.email || ''}</div>
-              </div>
               <div 
                 className="user-avatar"
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
