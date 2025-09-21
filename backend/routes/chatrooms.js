@@ -17,6 +17,7 @@ router.post('/', async (req, res) => {
         isPrivate: isPrivate || false,
         password: isPrivate ? password : null,
         color: color || '#007bff',
+        admins: [createdBy || 'Anonymous'],
         participants: participants || []
       });
       console.log('Room created successfully:', room._id);
@@ -43,14 +44,91 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Get room by name/pin
+// Join an existing room
+router.post('/:roomId/join', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { username, password } = req.body;
+    
+    if (!username) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if user is already a member
+    const isAlreadyMember = room.participants.some(p => p.username === username) || 
+                           room.createdBy === username || 
+                           room.admins.includes(username);
+    
+    if (isAlreadyMember) {
+      return res.json({ 
+        success: true, 
+        message: 'Already a member of this room',
+        room 
+      });
+    }
+    
+    // Check if room is private and requires password
+    if (room.isPrivate && room.password && room.password !== password) {
+      return res.status(403).json({ error: 'Invalid password for private room' });
+    }
+    
+    // Add user to room
+    const newParticipant = {
+      username,
+      isCreator: false,
+      isAdmin: false,
+      joinedAt: new Date(),
+      color: '#007bff',
+      permissions: {
+        canDeleteMessages: false,
+        canRemoveMembers: false,
+        canManageAdmins: false,
+        canEditRoomSettings: false
+      }
+    };
+    
+    room.participants.push(newParticipant);
+    await room.save();
+    
+    res.json({ 
+      success: true, 
+      message: 'Successfully joined room',
+      room 
+    });
+  } catch (err) {
+    console.error('Error joining room:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get room by name/pin (requires authentication and membership)
 router.get('/:roomName', async (req, res) => {
   try {
     const { roomName } = req.params;
+    const { username } = req.query; // Current user
+    
+    if (!username) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
     const room = await ChatRoom.findOne({ name: roomName });
     
     if (!room) {
       return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if user is a member of the room
+    const isMember = room.participants.some(p => p.username === username) || 
+                    room.createdBy === username || 
+                    room.admins.includes(username);
+    
+    if (!isMember) {
+      return res.status(403).json({ error: 'Access denied. You must be a member of this room.' });
     }
     
     res.json(room);
@@ -59,16 +137,40 @@ router.get('/:roomName', async (req, res) => {
   }
 });
 
-// Get all chatrooms
+// Get all chatrooms (only rooms user is a member of)
 router.get('/', async (req, res) => {
-  const rooms = await ChatRoom.find();
-  res.json(rooms);
+  try {
+    const { username } = req.query; // Current user
+    
+    if (!username) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    // Find rooms where user is a member, creator, or admin
+    const rooms = await ChatRoom.find({
+      $or: [
+        { 'participants.username': username },
+        { createdBy: username },
+        { admins: username }
+      ]
+    }).select('-__v');
+    
+    res.json(rooms);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Get messages for a room
+// Get messages for a room (requires authentication and membership)
 router.get('/:roomId/messages', async (req, res) => {
   try {
     const { roomId } = req.params;
+    const { username } = req.query; // Current user
+    
+    if (!username) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
     console.log('=== GETTING MESSAGES FOR ROOM:', roomId, '===');
     
     // First find the room by name/pin to get the MongoDB ObjectId
@@ -78,6 +180,15 @@ router.get('/:roomId/messages', async (req, res) => {
     if (!room) {
       console.log('Step 2: Room not found, returning empty array');
       return res.status(200).json([]);
+    }
+    
+    // Check if user is a member of the room
+    const isMember = room.participants.some(p => p.username === username) || 
+                    room.createdBy === username || 
+                    room.admins.includes(username);
+    
+    if (!isMember) {
+      return res.status(403).json({ error: 'Access denied. You must be a member of this room.' });
     }
     
     console.log('Step 2: Found room with ObjectId:', room._id);

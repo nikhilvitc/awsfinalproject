@@ -14,6 +14,19 @@ function ChatRoom() {
   const navigate = useNavigate();
   const { user: authUser, isAuthenticated } = useAuth();
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Don't render anything if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
+
   // [All state variables and refs remain the same]
   const [user, setUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -256,7 +269,7 @@ function ChatRoom() {
         const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
         console.log('Loading messages for room:', roomId);
         
-        const response = await fetch(`${apiUrl}/api/rooms/${roomId}/messages`, {
+        const response = await fetch(`${apiUrl}/api/rooms/${roomId}/messages?username=${authUser?.username || authUser?.email}`, {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
@@ -904,7 +917,7 @@ function ChatRoom() {
         console.log('Room not found in localStorage, checking backend...');
         try {
           const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
-          const response = await fetch(`${apiUrl}/api/rooms/${roomId}`);
+          const response = await fetch(`${apiUrl}/api/rooms/${roomId}?username=${authUser?.username || authUser?.email}`);
           
           if (response.ok) {
             const roomData = await response.json();
@@ -977,7 +990,7 @@ function ChatRoom() {
         console.log('No local messages found, fetching from backend...');
         try {
           const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
-          const messagesResponse = await fetch(`${apiUrl}/api/rooms/${roomId}/messages`);
+          const messagesResponse = await fetch(`${apiUrl}/api/rooms/${roomId}/messages?username=${authUser?.username || authUser?.email}`);
           
           if (messagesResponse.ok) {
             const backendMessages = await messagesResponse.json();

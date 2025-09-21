@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { AuthProvider } from "./components/AuthContext";
 import Home from "./components/Home";
 import ChatRoom from "./components/ChatRoom";
+import RoomJoin from "./components/RoomJoin";
 import { Login, Register } from "./components/Auth"; // Combined auth components
 import UserProfile from "./components/UserProfile";
 import Navbar from "./components/Navbar";
@@ -124,6 +125,20 @@ function AnimatedRoutes() {
               <AnimatedPage>
                 <div className="content-container">
                   <UserProfile />
+                </div>
+              </AnimatedPage>
+            </>
+          }
+        />
+
+        <Route
+          path="/join"
+          element={
+            <>
+              <Navbar />
+              <AnimatedPage>
+                <div className="content-container">
+                  <RoomJoin />
                 </div>
               </AnimatedPage>
             </>
