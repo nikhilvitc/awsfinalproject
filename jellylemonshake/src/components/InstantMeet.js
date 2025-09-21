@@ -66,8 +66,8 @@ function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
         onMeetingStarted(data.meeting);
         onClose();
         
-        // Redirect to meeting
-        window.open(`/meet/${data.meeting.meetingId}`, '_blank');
+        // Redirect to meeting in the same tab
+        window.location.href = `/meet/${data.meeting.meetingId}`;
       } else {
         setError(data.error || 'Failed to start instant meeting');
       }

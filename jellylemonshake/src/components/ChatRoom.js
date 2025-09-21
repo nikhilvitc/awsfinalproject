@@ -904,33 +904,49 @@ function ChatRoom() {
   // Initialize room data from localStorage
   useEffect(() => {
     const initializeRoom = async () => {
-      const userData = localStorage.getItem("chatUser");
-
-      if (!userData) {
+      // Check if user is authenticated first
+      if (!isAuthenticated || !authUser) {
+        console.log('User not authenticated, redirecting to home');
         navigate("/");
         return;
       }
 
-      const parsedUser = JSON.parse(userData);
+      const userData = localStorage.getItem("chatUser");
 
-      // Assign a random color to the user if they don't have one
-      if (!parsedUser.color) {
-        parsedUser.color = generateRandomColor();
-        localStorage.setItem("chatUser", JSON.stringify(parsedUser));
+      if (!userData) {
+        // Create user data from auth user
+        const newUserData = {
+          username: getUserIdentifier(),
+          email: authUser.email,
+          name: authUser.name,
+          color: authUser.color || generateRandomColor(),
+          roomId: roomId,
+          joinedAt: new Date().toISOString()
+        };
+        localStorage.setItem("chatUser", JSON.stringify(newUserData));
+        setUser(newUserData);
+      } else {
+        const parsedUser = JSON.parse(userData);
+
+        // Assign a random color to the user if they don't have one
+        if (!parsedUser.color) {
+          parsedUser.color = generateRandomColor();
+          localStorage.setItem("chatUser", JSON.stringify(parsedUser));
+        }
+
+        if (parsedUser.roomId !== roomId) {
+          // Update the active room
+          localStorage.setItem(
+            "chatUser",
+            JSON.stringify({
+              ...parsedUser,
+              roomId,
+            })
+          );
+        }
+
+        setUser(parsedUser);
       }
-
-      if (parsedUser.roomId !== roomId) {
-        // Update the active room
-        localStorage.setItem(
-          "chatUser",
-          JSON.stringify({
-            ...parsedUser,
-            roomId,
-          })
-        );
-      }
-
-      setUser(parsedUser);
 
       // Get all joined rooms
       const userRooms = JSON.parse(localStorage.getItem("joinedRooms") || "[]");
@@ -1781,6 +1797,17 @@ function ChatRoom() {
       {/* Top Header Bar */}
       <div className="top-header">
         <div className="header-left">
+          <button 
+            onClick={() => navigate('/')} 
+            className="home-button"
+            title="Go to Home"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9,22 9,12 15,12 15,22"></polyline>
+            </svg>
+            Home
+          </button>
           <div className="room-title-header">
             Room #{roomId}
             <div className="room-status-badge">
