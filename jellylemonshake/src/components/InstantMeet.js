@@ -39,7 +39,7 @@ function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
         isRecurring: false
       };
 
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       
       const response = await fetch(`${apiUrl}/api/meetings/create`, {
         method: 'POST',
