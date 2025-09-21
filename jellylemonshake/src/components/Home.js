@@ -639,7 +639,7 @@ function Home() {
   );
 
   const renderCreateRoomView = () => (
-    <div className="form-container">
+    <div>
       <div className="home-header">
         <h1 className="home-title">Create a New Room</h1>
         <p className="home-subtitle">Set up your own chat room</p>
@@ -717,7 +717,7 @@ function Home() {
   );
 /*sohamghosh-jellylemonshake-23bps1146 */
   const renderJoinRoomView = () => (
-    <div className="form-container">
+    <div>
       <div className="home-header">
         <h1 className="home-title">Join a Room</h1>
         <p className="home-subtitle">Enter the room PIN to join</p>
