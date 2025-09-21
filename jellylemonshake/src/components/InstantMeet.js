@@ -41,7 +41,7 @@ function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
 
       const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
       
-      const response = await fetch(`${apiUrl}/meetings/create`, {
+      const response = await fetch(`${apiUrl}/api/meetings/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -53,7 +53,7 @@ function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
 
       if (data.success) {
         // Immediately set meeting status to active since it's an instant meeting
-        await fetch(`${apiUrl}/meetings/${data.meeting.meetingId}/status`, {
+        await fetch(`${apiUrl}/api/meetings/${data.meeting.meetingId}/status`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json'

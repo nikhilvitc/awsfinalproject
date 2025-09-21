@@ -135,7 +135,7 @@ function MeetingScheduler({ roomId, participants, onClose, onMeetingCreated }) {
       };
 
       const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
-      const response = await fetch(`${apiUrl}/meetings/create`, {
+      const response = await fetch(`${apiUrl}/api/meetings/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

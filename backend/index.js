@@ -61,7 +61,7 @@ connectDB();
 // Routes
 app.use('/api/rooms', require('./routes/chatrooms'));
 app.use('/api/jdoodle', require('./routes/jdoodle'));
-app.use('/meetings', require('./routes/meetings'));
+app.use('/api/meetings', require('./routes/meetings'));
 
 // Socket.IO real-time chat functionality
 const Message = require('./models/Message');
