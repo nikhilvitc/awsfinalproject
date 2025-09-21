@@ -114,7 +114,7 @@ function Home() {
       };
 
       // Create room on backend
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
       const response = await fetch(`${apiUrl}/api/rooms`, {
         method: 'POST',
         headers: {
@@ -251,7 +251,7 @@ function Home() {
       localStorage.setItem("preferredUsername", username);
 
       // Check backend first for room
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
       let room = null;
       const userColor = generateRandomColor();
 
