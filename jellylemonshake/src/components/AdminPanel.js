@@ -21,7 +21,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
   const loadRoomInfo = async () => {
     setLoading(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
       const response = await fetch(`${apiUrl}/api/rooms/${roomId}/members?username=${user.username || user.email}`);
       
       if (response.ok) {
@@ -40,7 +40,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
 
   const deleteMessage = async (messageId) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
       const response = await fetch(`${apiUrl}/api/rooms/${roomId}/messages/${messageId}`, {
         method: 'DELETE',
         headers: {
@@ -63,7 +63,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
   const removeMember = async (username) => {
     if (window.confirm(`Are you sure you want to remove ${username} from this room?`)) {
       try {
-        const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
+        const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
         const response = await fetch(`${apiUrl}/api/rooms/${roomId}/members/${username}`, {
           method: 'DELETE',
           headers: {
@@ -87,7 +87,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
 
   const promoteToAdmin = async (username) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
       const response = await fetch(`${apiUrl}/api/rooms/${roomId}/admins`, {
         method: 'POST',
         headers: {
@@ -114,7 +114,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
   const demoteAdmin = async (username) => {
     if (window.confirm(`Are you sure you want to demote ${username} from admin?`)) {
       try {
-        const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
+        const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
         const response = await fetch(`${apiUrl}/api/rooms/${roomId}/admins/${username}`, {
           method: 'DELETE',
           headers: {

@@ -30,7 +30,7 @@ function RoomJoin() {
     setError('');
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
       const response = await fetch(`${apiUrl}/api/rooms/${roomId}/join`, {
         method: 'POST',
         headers: {
