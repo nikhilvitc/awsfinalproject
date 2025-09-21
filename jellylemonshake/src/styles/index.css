@@ -1,26 +1,24 @@
-/* Variables needed for global application */
+/* Legacy variables for backward compatibility */
 :root {
-  --primary-color: #4a6fa5;
-  --secondary-color: #166088;
-  --accent-color: #4fc3c5;
-  --text-color: #333;
-  --light-text: #fff;
-  --background-light: #f5f7fb;
-  --background-dark: #e1e5ee;
-  --error-color: #e74c3c;
-  --success-color: #27ae60;
-  --border-radius: 8px;
-  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  --transition-speed: 0.3s;
+  /* Legacy color mappings */
+  --text-color: var(--text-primary);
+  --light-text: var(--text-white);
+  --background-light: var(--bg-secondary);
+  --background-dark: var(--bg-tertiary);
+  --error-color: var(--error-color);
+  --success-color: var(--success-color);
+  --border-radius: var(--border-radius);
+  --shadow: var(--shadow);
+  --transition-speed: var(--transition);
 
   /* Room color variables - default values that will be overridden */
   --room-base-color: var(--primary-color);
-  --room-lighter-color: var(--background-light);
-  --room-darker-color: var(--secondary-color);
+  --room-lighter-color: var(--bg-secondary);
+  --room-darker-color: var(--primary-dark);
   --room-mid-color: var(--accent-color);
-  --primary-color-rgb: 74, 111, 165;
-  --border-color: #e0e0e0;
-  --border-color-rgb: 224, 224, 224;
+  --primary-color-rgb: 99, 102, 241;
+  --border-color: var(--border-color);
+  --border-color-rgb: 229, 231, 235;
 }
 
 /* Basic reset styles */

@@ -16,7 +16,7 @@ class SocketService {
       this.socket.disconnect();
     }
 
-    const serverUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+    const serverUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
     console.log('Connecting to Socket.IO server:', serverUrl);
     
     this.socket = io(serverUrl, {
@@ -31,7 +31,7 @@ class SocketService {
       maxReconnectionAttempts: 5,
       forceNew: true,
       autoConnect: true,
-      secure: true, // Use secure connection for HTTPS
+      secure: serverUrl.startsWith('https'), // Use secure connection only for HTTPS
       rejectUnauthorized: false,
       withCredentials: true
     });

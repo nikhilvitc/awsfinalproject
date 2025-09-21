@@ -27,7 +27,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
     setLoading(true);
     setError('');
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const username = getUserIdentifier();
       console.log('Loading room info for:', roomId, 'as user:', username);
       
@@ -54,7 +54,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
 
   const deleteMessage = async (messageId) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const response = await fetch(`${apiUrl}/api/rooms/${roomId}/messages/${messageId}`, {
         method: 'DELETE',
         headers: {
@@ -77,7 +77,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
   const removeMember = async (username) => {
     if (window.confirm(`Are you sure you want to remove ${username} from this room?`)) {
       try {
-        const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
         const response = await fetch(`${apiUrl}/api/rooms/${roomId}/members/${username}`, {
           method: 'DELETE',
           headers: {
@@ -101,7 +101,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
 
   const promoteToAdmin = async (username) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const response = await fetch(`${apiUrl}/api/rooms/${roomId}/admins`, {
         method: 'POST',
         headers: {
@@ -128,7 +128,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
   const demoteAdmin = async (username) => {
     if (window.confirm(`Are you sure you want to demote ${username} from admin?`)) {
       try {
-        const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
         const response = await fetch(`${apiUrl}/api/rooms/${roomId}/admins/${username}`, {
           method: 'DELETE',
           headers: {
