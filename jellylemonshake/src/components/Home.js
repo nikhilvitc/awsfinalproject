@@ -500,12 +500,6 @@ function Home() {
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
             </div>
-            <div className="user-info">
-              <div className="user-name">
-                {user.user_metadata?.display_name || user.email?.split('@')[0] || 'User'}
-              </div>
-              <div className="user-email">{user.email}</div>
-            </div>
           </div>
         )}
       </div>

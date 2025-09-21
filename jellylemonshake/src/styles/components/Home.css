@@ -112,49 +112,34 @@
 .user-profile {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
+  justify-content: center;
+  padding: var(--space-xs);
   background: var(--gray-50);
-  border-radius: var(--border-radius);
+  border-radius: 50%;
   border: 1px solid var(--gray-200);
   transition: all 0.3s ease;
+  width: 48px;
+  height: 48px;
 }
 
 .user-profile:hover {
   background: var(--gray-100);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.user-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.2;
-}
-
-.user-email {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.2;
-}
 
 .home-title {
   font-size: var(--font-size-4xl);
