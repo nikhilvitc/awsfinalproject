@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import MessageItem from "./MessageItem";
 import MeetingScheduler from "./MeetingScheduler";
 import InstantMeet from "./InstantMeet";
+import AdminPanel from "./AdminPanel";
 import { useAuth } from "./AuthContext";
 import socketService from "../services/socketService";
 import "../styles/components/ChatRoom.css";
@@ -82,6 +83,10 @@ function ChatRoom() {
   const [onlineUsersCount, setOnlineUsersCount] = useState(0);
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [socketConnected, setSocketConnected] = useState(false);
+  
+  // Admin panel states
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [isUserAdmin, setIsUserAdmin] = useState(false);
 
   // [All refs and constant declarations remain the same]
   const messagesEndRef = useRef(null);
@@ -304,10 +309,18 @@ function ChatRoom() {
             createdBy: authUser.username || authUser.email || 'Anonymous',
             isPrivate: false,
             color: '#007bff',
+            admins: [authUser.username || authUser.email || 'Anonymous'],
             participants: [{
               username: authUser.username || authUser.email || 'Anonymous',
               color: '#007bff',
-              isCreator: true
+              isCreator: true,
+              isAdmin: true,
+              permissions: {
+                canDeleteMessages: true,
+                canRemoveMembers: true,
+                canManageAdmins: true,
+                canEditRoomSettings: true
+              }
             }]
           }),
         });
@@ -932,6 +945,15 @@ function ChatRoom() {
 
       setRoomInfo(room);
       setParticipants(room.participants);
+      
+      // Check if current user is admin
+      const currentUsername = authUser?.username || authUser?.email;
+      const isAdmin = room.createdBy === currentUsername || 
+                     (room.admins && room.admins.includes(currentUsername)) ||
+                     (room.participants && room.participants.some(p => 
+                       p.username === currentUsername && p.isAdmin
+                     ));
+      setIsUserAdmin(isAdmin);
 
       // Get participants for all rooms
       const roomParticipantsMap = {};
@@ -2315,6 +2337,15 @@ function ChatRoom() {
             >
               📅 Schedule Meeting
             </button>
+            {isUserAdmin && (
+              <button 
+                onClick={() => setShowAdminPanel(true)} 
+                className="admin-button"
+                title="Room administration"
+              >
+                ⚙️ Admin Panel
+              </button>
+            )}
             <button onClick={leaveRoom} className="leave-button">
               Leave Room
             </button>
@@ -2762,6 +2793,12 @@ function ChatRoom() {
           </div>
         </div>
       )}
+
+      <AdminPanel
+        roomId={roomId}
+        onClose={() => setShowAdminPanel(false)}
+        isVisible={showAdminPanel}
+      />
     </div>
   );
 }

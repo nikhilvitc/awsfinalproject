@@ -144,4 +144,211 @@ router.post('/:roomId/messages', async (req, res) => {
   }
 });
 
+// Admin routes
+// Get room members (admin only)
+router.get('/:roomId/members', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { username } = req.query; // Current user
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if user is admin
+    if (!room.isUserAdmin(username)) {
+      return res.status(403).json({ error: 'Admin privileges required' });
+    }
+    
+    res.json({
+      success: true,
+      members: room.participants,
+      admins: room.admins,
+      createdBy: room.createdBy
+    });
+  } catch (err) {
+    console.error('Error fetching room members:', err);
+    res.status(500).json({ error: 'Failed to fetch members' });
+  }
+});
+
+// Delete a message (admin only)
+router.delete('/:roomId/messages/:messageId', async (req, res) => {
+  try {
+    const { roomId, messageId } = req.params;
+    const { username } = req.body; // Current user
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if user is admin
+    if (!room.isUserAdmin(username)) {
+      return res.status(403).json({ error: 'Admin privileges required' });
+    }
+    
+    const message = await Message.findByIdAndDelete(messageId);
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+    
+    res.json({ success: true, message: 'Message deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting message:', err);
+    res.status(500).json({ error: 'Failed to delete message' });
+  }
+});
+
+// Remove a member (admin only)
+router.delete('/:roomId/members/:username', async (req, res) => {
+  try {
+    const { roomId, username: targetUsername } = req.params;
+    const { username: adminUsername } = req.body; // Admin performing the action
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if admin has permission
+    if (!room.hasPermission(adminUsername, 'canRemoveMembers')) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+    
+    // Can't remove the creator
+    if (targetUsername === room.createdBy) {
+      return res.status(400).json({ error: 'Cannot remove room creator' });
+    }
+    
+    // Remove from participants
+    room.participants = room.participants.filter(p => p.username !== targetUsername);
+    
+    // Remove from admins if they were an admin
+    room.admins = room.admins.filter(admin => admin !== targetUsername);
+    
+    await room.save();
+    
+    res.json({ success: true, message: 'Member removed successfully' });
+  } catch (err) {
+    console.error('Error removing member:', err);
+    res.status(500).json({ error: 'Failed to remove member' });
+  }
+});
+
+// Promote user to admin
+router.post('/:roomId/admins', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { username: targetUsername, adminUsername } = req.body;
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if admin has permission
+    if (!room.hasPermission(adminUsername, 'canManageAdmins')) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+    
+    // Add to admins if not already
+    if (!room.admins.includes(targetUsername)) {
+      room.admins.push(targetUsername);
+      
+      // Update participant permissions
+      const participant = room.participants.find(p => p.username === targetUsername);
+      if (participant) {
+        participant.isAdmin = true;
+        participant.permissions = {
+          canDeleteMessages: true,
+          canRemoveMembers: true,
+          canManageAdmins: true,
+          canEditRoomSettings: true
+        };
+      }
+      
+      await room.save();
+    }
+    
+    res.json({ success: true, message: 'User promoted to admin' });
+  } catch (err) {
+    console.error('Error promoting user:', err);
+    res.status(500).json({ error: 'Failed to promote user' });
+  }
+});
+
+// Demote admin to regular member
+router.delete('/:roomId/admins/:username', async (req, res) => {
+  try {
+    const { roomId, username: targetUsername } = req.params;
+    const { username: adminUsername } = req.body;
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if admin has permission
+    if (!room.hasPermission(adminUsername, 'canManageAdmins')) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+    
+    // Can't demote the creator
+    if (targetUsername === room.createdBy) {
+      return res.status(400).json({ error: 'Cannot demote room creator' });
+    }
+    
+    // Remove from admins
+    room.admins = room.admins.filter(admin => admin !== targetUsername);
+    
+    // Reset participant permissions
+    const participant = room.participants.find(p => p.username === targetUsername);
+    if (participant) {
+      participant.isAdmin = false;
+      participant.permissions = {
+        canDeleteMessages: false,
+        canRemoveMembers: false,
+        canManageAdmins: false,
+        canEditRoomSettings: false
+      };
+    }
+    
+    await room.save();
+    
+    res.json({ success: true, message: 'Admin demoted to member' });
+  } catch (err) {
+    console.error('Error demoting admin:', err);
+    res.status(500).json({ error: 'Failed to demote admin' });
+  }
+});
+
+// Update room settings (admin only)
+router.patch('/:roomId/settings', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { username, settings } = req.body;
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if user has permission
+    if (!room.hasPermission(username, 'canEditRoomSettings')) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+    
+    // Update settings
+    room.settings = { ...room.settings, ...settings };
+    await room.save();
+    
+    res.json({ success: true, message: 'Room settings updated', settings: room.settings });
+  } catch (err) {
+    console.error('Error updating room settings:', err);
+    res.status(500).json({ error: 'Failed to update settings' });
+  }
+});
+
 module.exports = router; 

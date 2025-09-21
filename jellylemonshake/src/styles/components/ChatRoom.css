@@ -372,6 +372,16 @@
   background-color: rgba(76, 175, 80, 0.2);
 }
 
+.admin-button {
+  background-color: rgba(255, 152, 0, 0.1);
+  color: #ff9800;
+  cursor: pointer;
+}
+
+.admin-button:hover {
+  background-color: rgba(255, 152, 0, 0.2);
+}
+
 .leave-button {
   background-color: rgba(231, 76, 60, 0.1);
   color: var(--error-color);
