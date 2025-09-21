@@ -27,20 +27,9 @@ function Home() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [error, setError] = useState("");
-  const [dialogVisible, setDialogVisible] = useState(false);
-
-  // Function to show a dialog view with animation
-  const showDialogView = (newView) => {
-    setDialogVisible(true);
+  // Function to show a view
+  const showView = (newView) => {
     setView(newView);
-  };
-
-  // Function to hide dialog and go back to select view
-  const hideDialogView = () => {
-    setDialogVisible(false);
-    setTimeout(() => {
-      setView("select");
-    }, 300); // Match the CSS transition duration
   };
 
   // Function to generate random color
@@ -500,7 +489,7 @@ function Home() {
   };
 
   const renderSelectView = () => (
-    <div className={`home-header ${dialogVisible ? "hidden" : ""}`}>
+    <div className={`home-header ${view !== "select" ? "hidden" : ""}`}>
       <h1 className="home-title">Welcome to ChatApp</h1>
       <p className="home-subtitle">Connect with friends and colleagues in real-time</p>
       {user && !user.isGuest && (
@@ -511,7 +500,7 @@ function Home() {
       <div className="action-buttons">
         <button
           className="btn btn-primary"
-          onClick={() => showDialogView("create")}
+          onClick={() => showView("create")}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14"></path>
@@ -520,7 +509,7 @@ function Home() {
         </button>
         <button
           className="btn btn-secondary"
-          onClick={() => showDialogView("join")}
+          onClick={() => showView("join")}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -639,8 +628,15 @@ function Home() {
   );
 
   const renderCreateRoomView = () => (
-    <div>
+    <div className="create-room-view">
       <div className="home-header">
+        <button 
+          onClick={() => setView("select")} 
+          className="back-button"
+          style={{ marginBottom: '1rem', background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '1rem' }}
+        >
+          ← Back
+        </button>
         <h1 className="home-title">Create a New Room</h1>
         <p className="home-subtitle">Set up your own chat room</p>
       </div>
@@ -698,7 +694,7 @@ function Home() {
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={hideDialogView}
+            onClick={() => setView("select")}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7"></path>
@@ -717,8 +713,15 @@ function Home() {
   );
 /*sohamghosh-jellylemonshake-23bps1146 */
   const renderJoinRoomView = () => (
-    <div>
+    <div className="join-room-view">
       <div className="home-header">
+        <button 
+          onClick={() => setView("select")} 
+          className="back-button"
+          style={{ marginBottom: '1rem', background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '1rem' }}
+        >
+          ← Back
+        </button>
         <h1 className="home-title">Join a Room</h1>
         <p className="home-subtitle">Enter the room PIN to join</p>
       </div>
@@ -792,7 +795,7 @@ function Home() {
           <button
             type="button"
             className="back-button"
-            onClick={hideDialogView}
+            onClick={() => setView("select")}
           >
             Back
           </button>
@@ -925,20 +928,10 @@ function Home() {
       <div className="home-content fade-in">
         {renderSelectView()}
 
-        {/* Dialog overlay with click-outside-to-close functionality */}
-        <div
-          className={`dialog-overlay ${dialogVisible ? "visible" : ""}`}
-          onClick={hideDialogView}
-          style={{ 
-            display: dialogVisible ? 'flex' : 'none'
-          }}
-        >
-          <div className="form-container" onClick={(e) => e.stopPropagation()}>
-            {view === "create" && renderCreateRoomView()}
-            {view === "join" && renderJoinRoomView()}
-            {view === "myRooms" && renderMyRoomsView()}
-          </div>
-        </div>
+        {/* Direct view rendering without dialog overlay */}
+        {view === "create" && renderCreateRoomView()}
+        {view === "join" && renderJoinRoomView()}
+        {view === "myRooms" && renderMyRoomsView()}
       </div>
       {/* GitHub Profile Logo - Bottom Left */}
       <a
