@@ -6,10 +6,20 @@ router.post('/execute', async (req, res) => {
   const { code, language } = req.body;
   
   console.log(`🚀 Code execution requested - Language: ${language}`);
-  console.log(`📝 Code: ${code.substring(0, 100)}...`);
+  console.log(`📝 Code: ${code ? code.substring(0, 100) + '...' : 'No code provided'}`);
+  
+  // Validate input
+  if (!code || !language) {
+    return res.status(400).json({
+      error: 'Missing required fields: code and language are required',
+      output: 'Error: Please provide both code and language parameters'
+    });
+  }
   
   // Check if JDoodle credentials are configured
-  if (!process.env.JDOODLE_CLIENT_ID || !process.env.JDOODLE_CLIENT_SECRET) {
+  if (!process.env.JDOODLE_CLIENT_ID || !process.env.JDOODLE_CLIENT_SECRET || 
+      process.env.JDOODLE_CLIENT_ID === 'your_jdoodle_client_id' || 
+      process.env.JDOODLE_CLIENT_SECRET === 'your_jdoodle_client_secret') {
     console.log('⚠️ JDoodle API credentials not configured');
     return res.json({
       output: `⚠️ Code execution service not configured.\n\nTo enable code execution:\n1. Sign up at https://www.jdoodle.com/compiler-api/\n2. Get your Client ID and Secret\n3. Add them to backend/.env file:\n   JDOODLE_CLIENT_ID=your_id\n   JDOODLE_CLIENT_SECRET=your_secret\n\n📝 Your ${language} code:\n${code}`,
