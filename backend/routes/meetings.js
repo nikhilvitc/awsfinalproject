@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Meeting = require('../models/Meeting');
+const ChatRoom = require('../models/ChatRoom');
 
 // Create a new meeting
 router.post('/create', async (req, res) => {
@@ -234,6 +235,88 @@ router.get('/user/:organizer/upcoming', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching upcoming meetings',
+      error: error.message
+    });
+  }
+});
+
+// Get meetings for a specific room
+router.get('/room/:roomId', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    
+    console.log('Fetching meetings for room:', roomId);
+    
+    const meetings = await Meeting.find({ roomId })
+      .sort({ scheduledTime: 1 })
+      .limit(50);
+    
+    console.log('Found meetings:', meetings.length);
+    
+    res.json(meetings);
+  } catch (error) {
+    console.error('Error fetching room meetings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching meetings',
+      error: error.message
+    });
+  }
+});
+
+// Send meeting notification to room participants
+router.post('/:meetingId/notify', async (req, res) => {
+  try {
+    const { meetingId } = req.params;
+    const { type, organizer, message } = req.body;
+
+    console.log('Meeting notification request:', { meetingId, type, organizer, message });
+
+    // Find the meeting
+    const meeting = await Meeting.findOne({ meetingId });
+    if (!meeting) {
+      return res.status(404).json({ success: false, message: 'Meeting not found' });
+    }
+
+    // Find the associated room
+    const room = await ChatRoom.findOne({ name: meeting.roomId });
+    if (!room) {
+      return res.status(404).json({ success: false, message: 'Room not found' });
+    }
+
+    // Create notification message
+    const notificationMessage = {
+      _id: new Date().getTime().toString(),
+      text: message || `${organizer} has started a video call`,
+      user: {
+        username: organizer,
+        email: organizer,
+        name: organizer,
+        color: '#007bff'
+      },
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      room: meeting.roomId,
+      isNotification: true,
+      notificationType: 'meeting_started',
+      meetingId: meetingId,
+      meetingUrl: `/meet/${meetingId}`
+    };
+
+    // Here you would typically send this via Socket.IO to all room participants
+    // For now, we'll just log it
+    console.log('Meeting notification created:', notificationMessage);
+
+    res.json({
+      success: true,
+      message: 'Notification sent successfully',
+      notification: notificationMessage
+    });
+  } catch (error) {
+    console.error('Error sending meeting notification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error sending notification',
       error: error.message
     });
   }

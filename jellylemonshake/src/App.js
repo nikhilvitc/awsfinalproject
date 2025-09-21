@@ -12,6 +12,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Home from "./components/Home";
 import ChatRoom from "./components/ChatRoom";
 import RoomJoin from "./components/RoomJoin";
+import MeetingRoom from "./components/MeetingRoom";
 import { Login, Register } from "./components/Auth"; // Combined auth components
 import UserProfile from "./components/UserProfile";
 import Navbar from "./components/Navbar";
@@ -148,6 +149,9 @@ function AnimatedRoutes() {
 
         {/* Room route without AnimatedPage wrapper for instant room changes */}
         <Route path="/room/:roomId" element={<RoomPage />} />
+
+        {/* Meeting route */}
+        <Route path="/meet/:meetingId" element={<MeetingRoom />} />
 
         <Route
           path="*"

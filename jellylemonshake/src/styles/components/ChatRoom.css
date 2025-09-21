@@ -382,6 +382,16 @@
   background-color: rgba(255, 152, 0, 0.2);
 }
 
+.meetings-button {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: #2196f3;
+  cursor: pointer;
+}
+
+.meetings-button:hover {
+  background-color: rgba(33, 150, 243, 0.2);
+}
+
 .leave-button {
   background-color: rgba(231, 76, 60, 0.1);
   color: var(--error-color);

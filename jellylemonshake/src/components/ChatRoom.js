@@ -4,6 +4,7 @@ import MessageItem from "./MessageItem";
 import MeetingScheduler from "./MeetingScheduler";
 import InstantMeet from "./InstantMeet";
 import AdminPanel from "./AdminPanel";
+import MeetingsList from "./MeetingsList";
 import { useAuth } from "./AuthContext";
 import socketService from "../services/socketService";
 import "../styles/components/ChatRoom.css";
@@ -107,6 +108,9 @@ function ChatRoom() {
   // Admin panel states
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [isUserAdmin, setIsUserAdmin] = useState(false);
+  
+  // Meetings states
+  const [showMeetingsList, setShowMeetingsList] = useState(false);
 
   // [All refs and constant declarations remain the same]
   const messagesEndRef = useRef(null);
@@ -2380,6 +2384,13 @@ function ChatRoom() {
                 ⚙️ Admin Panel
               </button>
             )}
+            <button 
+              onClick={() => setShowMeetingsList(true)} 
+              className="meetings-button"
+              title="View scheduled meetings"
+            >
+              📅 Meetings
+            </button>
             <button onClick={leaveRoom} className="leave-button">
               Leave Room
             </button>
@@ -2833,6 +2844,14 @@ function ChatRoom() {
           roomId={roomId}
           onClose={() => setShowAdminPanel(false)}
           isVisible={showAdminPanel}
+        />
+      )}
+      
+      {showMeetingsList && (
+        <MeetingsList
+          roomId={roomId}
+          onClose={() => setShowMeetingsList(false)}
+          isVisible={showMeetingsList}
         />
       )}
     </div>
