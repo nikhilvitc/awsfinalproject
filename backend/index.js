@@ -207,6 +207,17 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Handle message deletion
+  socket.on('message-deleted', ({ roomId, messageId, deletedBy }) => {
+    console.log(`Message ${messageId} deleted in room ${roomId} by ${deletedBy}`);
+    // Broadcast to all other users in the room
+    socket.to(roomId).emit('message-deleted', {
+      roomId,
+      messageId,
+      deletedBy
+    });
+  });
+
   // Handle disconnect
   socket.on('disconnect', () => {
     const userInfo = connectedUsers.get(socket.id);

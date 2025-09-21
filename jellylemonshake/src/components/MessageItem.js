@@ -41,6 +41,9 @@ function MessageItem({
   onMouseEnter,
   onMouseLeave,
   roomColor,
+  canDeleteMessages = false,
+  onDeleteMessage,
+  roomId,
 }) {
   // Add state for copy button feedback
   const [copied, setCopied] = useState(false);
@@ -48,6 +51,8 @@ function MessageItem({
   const [showOutput, setShowOutput] = useState(false);
   // Add state for loading while code is being executed
   const [executingCode, setExecutingCode] = useState(false);
+  // Add state for delete confirmation
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   // Add state to store code execution output
   const [outputLines, setOutputLines] = useState([]);
   // Add state for user input in terminal
@@ -193,6 +198,38 @@ function MessageItem({
     setUserInput("");
   };
 
+  // Handle message deletion
+  const handleDeleteMessage = async () => {
+    if (window.confirm('Are you sure you want to delete this message? This action cannot be undone.')) {
+      try {
+        const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+        const response = await fetch(`${apiUrl}/api/rooms/${roomId}/messages/${message._id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            username: message.user?.username || message.user || message.senderName || 'Anonymous'
+          })
+        });
+
+        if (response.ok) {
+          // Call the parent component's delete handler
+          if (onDeleteMessage) {
+            onDeleteMessage(message._id);
+          }
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to delete message: ${errorData.error || 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error('Error deleting message:', error);
+        alert('Error deleting message. Please try again.');
+      }
+    }
+    setShowDeleteConfirm(false);
+  };
+
   // Format timestamp
   const formattedTime = message.timestamp
     ? new Date(message.timestamp).toLocaleTimeString([], {
@@ -300,6 +337,32 @@ function MessageItem({
               strokeLinejoin="round"
             >
               <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+          </button>
+        )}
+
+        {/* Show delete button for admins when hovered */}
+        {isHovered && canDeleteMessages && (
+          <button
+            className="delete-button"
+            onClick={handleDeleteMessage}
+            title="Delete this message"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="3,6 5,6 21,6"></polyline>
+              <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
             </svg>
           </button>
         )}

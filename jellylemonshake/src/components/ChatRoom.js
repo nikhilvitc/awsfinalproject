@@ -134,6 +134,12 @@ function ChatRoom() {
   // Admin panel states
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [isUserAdmin, setIsUserAdmin] = useState(false);
+  const [adminPermissions, setAdminPermissions] = useState({
+    canDeleteMessages: false,
+    canRemoveMembers: false,
+    canManageAdmins: false,
+    canEditRoomSettings: false
+  });
   
   // Meetings states
   const [showMeetingsList, setShowMeetingsList] = useState(false);
@@ -318,6 +324,9 @@ function ChatRoom() {
           const existingMessages = await response.json();
           console.log('Loaded messages:', existingMessages.length);
           setMessages(Array.isArray(existingMessages) ? existingMessages : []);
+          
+          // Load admin permissions after successfully loading messages
+          await loadAdminPermissions();
         } else if (response.status === 404) {
           // Room doesn't exist yet, create it and start with empty messages
           console.log('Room not found, creating room...');
@@ -495,6 +504,18 @@ function ChatRoom() {
       console.error('Socket error type:', typeof error);
       setError('Connection error: ' + (error.message || 'Unknown error'));
     });
+
+    // Listen for message deletion events
+    if (socketService.socket) {
+      socketService.socket.on('message-deleted', (data) => {
+        console.log('Message deleted via Socket.IO:', data);
+        if (data.roomId === roomId) {
+          setMessages(prevMessages => 
+            prevMessages.filter(msg => msg._id !== data.messageId)
+          );
+        }
+      });
+    }
 
     // Cleanup on unmount or room change
     return () => {
@@ -1539,6 +1560,44 @@ function ChatRoom() {
     }
   };
 
+  // Load admin permissions for the current user
+  const loadAdminPermissions = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const username = getUserIdentifier();
+      
+      const response = await fetch(`${apiUrl}/api/rooms/${roomId}/permissions/${username}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAdminPermissions(data.permissions);
+        setIsUserAdmin(data.permissions.isAdmin || data.permissions.isCreator);
+      }
+    } catch (error) {
+      console.error('Error loading admin permissions:', error);
+    }
+  };
+
+  // Handle message deletion
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      // Remove the message from local state immediately for better UX
+      setMessages(prevMessages => prevMessages.filter(msg => msg._id !== messageId));
+      
+      // Emit socket event to notify other users
+      if (socketService.socket) {
+        socketService.socket.emit('message-deleted', {
+          roomId,
+          messageId,
+          deletedBy: getUserIdentifier()
+        });
+      }
+    } catch (error) {
+      console.error('Error handling message deletion:', error);
+      // Reload messages if there's an error
+      loadMessages();
+    }
+  };
+
   // Updated handle input change to detect mentions
   const handleInputChange = (e) => {
     const newValue = e.target.value;
@@ -2368,6 +2427,9 @@ function ChatRoom() {
                     onMouseEnter={(id) => setHoveredMessageId(id)}
                     onMouseLeave={() => setHoveredMessageId(null)}
                     roomColor={roomInfo?.color}
+                    canDeleteMessages={adminPermissions.canDeleteMessages}
+                    onDeleteMessage={handleDeleteMessage}
+                    roomId={roomId}
                   />
                 ))
               )}

@@ -10,6 +10,14 @@ function AdminPanel({ roomId, onClose, isVisible }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [roomInfo, setRoomInfo] = useState({
+    name: '',
+    color: '#007bff',
+    settings: {}
+  });
+  const [editingRoomName, setEditingRoomName] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
+  const [permissions, setPermissions] = useState({});
 
   // Helper function to get user identifier consistently
   const getUserIdentifier = () => {
@@ -20,6 +28,7 @@ function AdminPanel({ roomId, onClose, isVisible }) {
   useEffect(() => {
     if (isVisible && roomId) {
       loadRoomInfo();
+      loadPermissions();
     }
   }, [isVisible, roomId]);
 
@@ -150,6 +159,115 @@ function AdminPanel({ roomId, onClose, isVisible }) {
     }
   };
 
+  // Load user permissions
+  const loadPermissions = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const response = await fetch(`${apiUrl}/api/rooms/${roomId}/permissions/${getUserIdentifier()}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPermissions(data.permissions);
+      }
+    } catch (err) {
+      console.error('Error loading permissions:', err);
+    }
+  };
+
+  // Update room name
+  const updateRoomName = async () => {
+    if (!newRoomName.trim()) {
+      setError('Room name cannot be empty');
+      return;
+    }
+
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const response = await fetch(`${apiUrl}/api/rooms/${roomId}/name`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          username: getUserIdentifier(),
+          newName: newRoomName.trim()
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRoomInfo(prev => ({ ...prev, name: data.newName }));
+        setSuccess('Room name updated successfully');
+        setEditingRoomName(false);
+        setNewRoomName('');
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to update room name');
+      }
+    } catch (err) {
+      setError('Error updating room name');
+    }
+  };
+
+  // Update room color
+  const updateRoomColor = async (color) => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const response = await fetch(`${apiUrl}/api/rooms/${roomId}/color`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          username: getUserIdentifier(),
+          color: color
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRoomInfo(prev => ({ ...prev, color: data.color }));
+        setSuccess('Room color updated successfully');
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to update room color');
+      }
+    } catch (err) {
+      setError('Error updating room color');
+    }
+  };
+
+  // Update room settings
+  const updateRoomSettings = async (newSettings) => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const response = await fetch(`${apiUrl}/api/rooms/${roomId}/settings`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          username: getUserIdentifier(),
+          settings: newSettings
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRoomInfo(prev => ({ ...prev, settings: data.settings }));
+        setSuccess('Room settings updated successfully');
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to update room settings');
+      }
+    } catch (err) {
+      setError('Error updating room settings');
+    }
+  };
+
   if (!isVisible) return null;
 
   return (
@@ -174,6 +292,12 @@ function AdminPanel({ roomId, onClose, isVisible }) {
             onClick={() => setActiveTab('members')}
           >
             Members ({members.length})
+          </button>
+          <button 
+            className={`tab-button ${activeTab === 'customize' ? 'active' : ''}`}
+            onClick={() => setActiveTab('customize')}
+          >
+            Customize
           </button>
           <button 
             className={`tab-button ${activeTab === 'settings' ? 'active' : ''}`}
@@ -239,35 +363,174 @@ function AdminPanel({ roomId, onClose, isVisible }) {
             </div>
           )}
 
+          {activeTab === 'customize' && (
+            <div className="customize-section">
+              <h3>Room Customization</h3>
+              
+              {/* Room Name */}
+              <div className="customize-item">
+                <label>Room Name</label>
+                {editingRoomName ? (
+                  <div className="edit-room-name">
+                    <input
+                      type="text"
+                      value={newRoomName}
+                      onChange={(e) => setNewRoomName(e.target.value)}
+                      placeholder="Enter new room name"
+                      className="room-name-input"
+                    />
+                    <div className="edit-actions">
+                      <button 
+                        className="save-button"
+                        onClick={updateRoomName}
+                        disabled={!permissions.canEditRoomSettings}
+                      >
+                        Save
+                      </button>
+                      <button 
+                        className="cancel-button"
+                        onClick={() => {
+                          setEditingRoomName(false);
+                          setNewRoomName('');
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="room-name-display">
+                    <span className="current-room-name">{roomInfo.name || roomId}</span>
+                    <button 
+                      className="edit-button"
+                      onClick={() => {
+                        setNewRoomName(roomInfo.name || roomId);
+                        setEditingRoomName(true);
+                      }}
+                      disabled={!permissions.canEditRoomSettings}
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Room Color */}
+              <div className="customize-item">
+                <label>Room Color</label>
+                <div className="color-picker-section">
+                  <div className="current-color">
+                    <span>Current: </span>
+                    <div 
+                      className="color-preview" 
+                      style={{ backgroundColor: roomInfo.color }}
+                    ></div>
+                    <span className="color-value">{roomInfo.color}</span>
+                  </div>
+                  <div className="color-options">
+                    {[
+                      '#007bff', '#28a745', '#dc3545', '#ffc107', 
+                      '#17a2b8', '#6f42c1', '#e83e8c', '#fd7e14',
+                      '#20c997', '#6c757d', '#343a40', '#f8f9fa'
+                    ].map(color => (
+                      <button
+                        key={color}
+                        className={`color-option ${roomInfo.color === color ? 'selected' : ''}`}
+                        style={{ backgroundColor: color }}
+                        onClick={() => updateRoomColor(color)}
+                        disabled={!permissions.canEditRoomSettings}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Custom Color Input */}
+              <div className="customize-item">
+                <label>Custom Color</label>
+                <div className="custom-color-input">
+                  <input
+                    type="color"
+                    value={roomInfo.color}
+                    onChange={(e) => updateRoomColor(e.target.value)}
+                    disabled={!permissions.canEditRoomSettings}
+                    className="color-input"
+                  />
+                  <input
+                    type="text"
+                    value={roomInfo.color}
+                    onChange={(e) => setRoomInfo(prev => ({ ...prev, color: e.target.value }))}
+                    onBlur={() => updateRoomColor(roomInfo.color)}
+                    disabled={!permissions.canEditRoomSettings}
+                    className="color-text-input"
+                    placeholder="#000000"
+                  />
+                </div>
+              </div>
+
+              {!permissions.canEditRoomSettings && (
+                <div className="permission-notice">
+                  <p>You don't have permission to customize this room.</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'settings' && (
             <div className="settings-section">
               <h3>Room Settings</h3>
               <div className="settings-form">
                 <div className="setting-item">
                   <label>
-                    <input type="checkbox" defaultChecked />
+                    <input 
+                      type="checkbox" 
+                      checked={roomInfo.settings.allowMemberInvites !== false}
+                      onChange={(e) => updateRoomSettings({ allowMemberInvites: e.target.checked })}
+                      disabled={!permissions.canEditRoomSettings}
+                    />
                     Allow members to invite others
                   </label>
                 </div>
                 <div className="setting-item">
                   <label>
-                    <input type="checkbox" defaultChecked />
+                    <input 
+                      type="checkbox" 
+                      checked={roomInfo.settings.allowMessageDeletion !== false}
+                      onChange={(e) => updateRoomSettings({ allowMessageDeletion: e.target.checked })}
+                      disabled={!permissions.canEditRoomSettings}
+                    />
                     Allow message deletion
                   </label>
                 </div>
                 <div className="setting-item">
                   <label>
-                    <input type="checkbox" defaultChecked />
+                    <input 
+                      type="checkbox" 
+                      checked={roomInfo.settings.allowMemberRemoval !== false}
+                      onChange={(e) => updateRoomSettings({ allowMemberRemoval: e.target.checked })}
+                      disabled={!permissions.canEditRoomSettings}
+                    />
                     Allow member removal
                   </label>
                 </div>
                 <div className="setting-item">
                   <label>
-                    <input type="checkbox" />
+                    <input 
+                      type="checkbox" 
+                      checked={roomInfo.settings.requireAdminApproval === true}
+                      onChange={(e) => updateRoomSettings({ requireAdminApproval: e.target.checked })}
+                      disabled={!permissions.canEditRoomSettings}
+                    />
                     Require admin approval for new members
                   </label>
                 </div>
-                <button className="save-settings-button">Save Settings</button>
+                
+                {!permissions.canEditRoomSettings && (
+                  <div className="permission-notice">
+                    <p>You don't have permission to modify room settings.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

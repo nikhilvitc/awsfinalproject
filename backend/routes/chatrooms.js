@@ -685,4 +685,144 @@ router.patch('/:roomId/settings', async (req, res) => {
   }
 });
 
+// Delete a message (admin only)
+router.delete('/:roomId/messages/:messageId', async (req, res) => {
+  try {
+    const { roomId, messageId } = req.params;
+    const { username } = req.body;
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if user has permission
+    if (!room.hasPermission(username, 'canDeleteMessages')) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+    
+    // Find and delete the message
+    const message = await Message.findOneAndDelete({ 
+      _id: messageId, 
+      roomId: roomId 
+    });
+    
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+    
+    res.json({ success: true, message: 'Message deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting message:', err);
+    res.status(500).json({ error: 'Failed to delete message' });
+  }
+});
+
+// Update room name (admin only)
+router.patch('/:roomId/name', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { username, newName } = req.body;
+    
+    if (!newName || newName.trim().length === 0) {
+      return res.status(400).json({ error: 'Room name cannot be empty' });
+    }
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if user has permission
+    if (!room.hasPermission(username, 'canEditRoomSettings')) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+    
+    // Check if new name already exists
+    const existingRoom = await ChatRoom.findOne({ name: newName.trim() });
+    if (existingRoom && existingRoom._id.toString() !== room._id.toString()) {
+      return res.status(400).json({ error: 'Room name already exists' });
+    }
+    
+    // Update room name
+    const oldName = room.name;
+    room.name = newName.trim();
+    await room.save();
+    
+    res.json({ 
+      success: true, 
+      message: 'Room name updated successfully',
+      oldName,
+      newName: room.name
+    });
+  } catch (err) {
+    console.error('Error updating room name:', err);
+    res.status(500).json({ error: 'Failed to update room name' });
+  }
+});
+
+// Update room color (admin only)
+router.patch('/:roomId/color', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { username, color } = req.body;
+    
+    if (!color || !/^#[0-9A-F]{6}$/i.test(color)) {
+      return res.status(400).json({ error: 'Invalid color format' });
+    }
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    // Check if user has permission
+    if (!room.hasPermission(username, 'canEditRoomSettings')) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+    
+    // Update room color
+    room.color = color;
+    await room.save();
+    
+    res.json({ 
+      success: true, 
+      message: 'Room color updated successfully',
+      color: room.color
+    });
+  } catch (err) {
+    console.error('Error updating room color:', err);
+    res.status(500).json({ error: 'Failed to update room color' });
+  }
+});
+
+// Get room permissions for a user
+router.get('/:roomId/permissions/:username', async (req, res) => {
+  try {
+    const { roomId, username } = req.params;
+    
+    const room = await ChatRoom.findOne({ name: roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    
+    const isAdmin = room.isUserAdmin(username);
+    const isCreator = room.createdBy === username;
+    
+    const permissions = {
+      isAdmin,
+      isCreator,
+      canDeleteMessages: room.hasPermission(username, 'canDeleteMessages'),
+      canRemoveMembers: room.hasPermission(username, 'canRemoveMembers'),
+      canManageAdmins: room.hasPermission(username, 'canManageAdmins'),
+      canEditRoomSettings: room.hasPermission(username, 'canEditRoomSettings')
+    };
+    
+    res.json({ success: true, permissions });
+  } catch (err) {
+    console.error('Error getting permissions:', err);
+    res.status(500).json({ error: 'Failed to get permissions' });
+  }
+});
+
 module.exports = router; 
