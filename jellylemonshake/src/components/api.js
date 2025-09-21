@@ -1,5 +1,5 @@
 // api.js
-export const API_BASE_URL = process.env.REACT_APP_API_URL || "https://awsproject-backend.onrender.com";
+export const API_BASE_URL = process.env.REACT_APP_API_URL || "https://awsfinalproject-backend.onrender.com";
 
 // Helper for handling fetch responses
 const handleResponse = async (response) => {

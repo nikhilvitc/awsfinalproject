@@ -117,7 +117,7 @@ function MessageItem({
       console.log(`🚀 Executing ${message.language} code:`, codeToExecute);
 
       // Call the backend API for code execution
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
       const response = await fetch(`${apiUrl}/api/jdoodle/execute`, {
         method: 'POST',
         headers: {

@@ -21,7 +21,7 @@ function MeetingRoom() {
 
   const loadMeeting = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
       const response = await fetch(`${apiUrl}/api/meetings/${meetingId}`);
       
       if (response.ok) {
@@ -55,7 +55,7 @@ function MeetingRoom() {
 
   const sendMeetingNotification = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
       
       // Send notification to room participants
       await fetch(`${apiUrl}/api/meetings/${meetingId}/notify`, {
