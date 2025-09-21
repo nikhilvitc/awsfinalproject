@@ -16,7 +16,9 @@ function ChatRoom() {
 
   // Redirect to login if not authenticated
   useEffect(() => {
+    console.log('ChatRoom: Authentication check - isAuthenticated:', isAuthenticated, 'authUser:', authUser);
     if (!isAuthenticated) {
+      console.log('ChatRoom: User not authenticated, redirecting to login');
       navigate('/login');
       return;
     }
@@ -308,8 +310,14 @@ function ChatRoom() {
 
     const createRoomIfNeeded = async () => {
       try {
+        // Check if user is authenticated before creating room
+        if (!isAuthenticated || !authUser) {
+          console.log('User not authenticated, cannot create room');
+          return;
+        }
+        
         const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
-        console.log('Creating room:', roomId);
+        console.log('Creating room:', roomId, 'for user:', authUser.username || authUser.email);
         
         const response = await fetch(`${apiUrl}/api/rooms`, {
           method: 'POST',

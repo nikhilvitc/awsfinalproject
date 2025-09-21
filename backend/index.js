@@ -13,7 +13,8 @@ const io = socketIo(server, {
       "http://localhost:3000",
       "https://awsproject-frontend.onrender.com",
       "https://awsproject-t64b.onrender.com",
-      "https://jellylemonshake-frontend.onrender.com"
+      "https://jellylemonshake-frontend.onrender.com",
+      "https://awsfinalproject-frontend.onrender.com"
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
@@ -32,7 +33,8 @@ app.use(cors({
     "http://localhost:3000",
     "https://awsproject-frontend.onrender.com",
     "https://awsproject-t64b.onrender.com",
-    "https://jellylemonshake-frontend.onrender.com"
+    "https://jellylemonshake-frontend.onrender.com",
+    "https://awsfinalproject-frontend.onrender.com"
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
