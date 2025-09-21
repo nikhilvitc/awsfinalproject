@@ -13,6 +13,7 @@ import Home from "./components/Home";
 import ChatRoom from "./components/ChatRoom";
 import RoomJoin from "./components/RoomJoin";
 import MeetingRoom from "./components/MeetingRoom";
+import NotFound from "./components/NotFound";
 import { Login, Register } from "./components/Auth"; // Combined auth components
 import UserProfile from "./components/UserProfile";
 import Navbar from "./components/Navbar";
@@ -155,16 +156,7 @@ function AnimatedRoutes() {
 
         <Route
           path="*"
-          element={
-            <>
-              <Navbar />
-              <AnimatedPage>
-                <div className="content-container">
-                  <div className="not-found">Page not found</div>
-                </div>
-              </AnimatedPage>
-            </>
-          }
+          element={<NotFound />}
         />
       </Routes>
     </AnimatePresence>
