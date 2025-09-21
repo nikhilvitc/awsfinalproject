@@ -1804,41 +1804,128 @@ function ChatRoom() {
 
   return (
     <div className="chat-container">
-      <div className="sidebar">
+      {/* Top Header Bar */}
+      <div className="top-header">
+        <div className="header-left">
+          <div className="room-title-header">
+            Room #{roomId}
+            <div className="room-status-badge">
+              {socketConnected ? 'Online' : 'Connecting...'}
+            </div>
+          </div>
+        </div>
+        
+        <div className="header-center">
+          <div className="search-container">
+            <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="text"
+              placeholder="Search messages..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+          </div>
+        </div>
+        
+        <div className="header-right">
+          <button onClick={copyRoomLink} className="action-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            </svg>
+            Share
+          </button>
+          <button onClick={() => setShowInstantMeet(true)} className="action-btn success">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M23 7l-7 5 7 5V7z"></path>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+            Start Meeting
+          </button>
+          <button onClick={() => setShowMeetingScheduler(true)} className="action-btn warning">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            Schedule
+          </button>
+          <button onClick={() => setShowMeetingsList(true)} className="action-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            Meetings
+          </button>
+          {isUserAdmin && (
+            <button onClick={() => setShowAdminPanel(true)} className="action-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+              </svg>
+              Admin
+            </button>
+          )}
+          <button onClick={leaveRoom} className="action-btn danger">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16,17 21,12 16,7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Leave
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="main-content">
+        <div className="sidebar">
         <div className="sidebar-header">
-          <h2>My Rooms</h2>
+          <div className="sidebar-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9,22 9,12 15,12 15,22"></polyline>
+            </svg>
+            My Rooms
+          </div>
           <button
-            className="add-room-button"
+            className="add-room-btn"
             onClick={goToHome}
             title="Join or Create Room"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
+            Add Room
           </button>
         </div>
 
-        <div className="rooms-sidebar">
-          {joinedRooms.length === 0 ? (
-            <div className="no-rooms-sidebar">
-              <p>No rooms joined yet</p>
-              <button onClick={goToHome} className="join-room-btn">
-                Join a Room
-              </button>
+        <div className="sidebar-content">
+          <div className="rooms-section">
+            <div className="rooms-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9,22 9,12 15,12 15,22"></polyline>
+              </svg>
+              Rooms
             </div>
-          ) : (
-            <ul className="rooms-list-sidebar" ref={roomsListRef}>
+            {joinedRooms.length === 0 ? (
+              <div className="no-rooms-message">
+                <p>No rooms joined yet</p>
+                <button onClick={goToHome} className="home-button">
+                  Join a Room
+                </button>
+              </div>
+            ) : (
+              <div className="rooms-list" ref={roomsListRef}>
               {joinedRooms
                 .slice()
                 .sort((a, b) => {
@@ -1853,69 +1940,22 @@ function ChatRoom() {
                   );
                   return (
                     <React.Fragment key={room.roomId}>
-                      <li
-                        className={`room-item-sidebar ${
+                      <div
+                        className={`room-item ${
                           room.roomId === roomId ? "active" : ""
-                        } ${draggedRoom === room.roomId ? "dragging" : ""} ${
-                          dragOverRoom === room.roomId ? "drag-over" : ""
-                        } ${dragDirection === "up" ? "shift-up" : ""} ${
-                          dragDirection === "down" ? "shift-down" : ""
                         }`}
-                        draggable="true"
-                        onDragStart={(e) =>
-                          handleDragStart(e, room.roomId, index)
-                        }
-                        onDragOver={(e) =>
-                          handleDragOver(e, room.roomId, index)
-                        }
-                        onDrop={(e) => handleDrop(e, room.roomId)}
-                        onDragEnd={handleDragEnd}
-                        style={{
-                          transition: draggedRoom
-                            ? "transform 0.3s ease, opacity 0.3s ease"
-                            : "none",
-                          zIndex: draggedRoom === room.roomId ? "10" : "1",
-                          position: "relative",
-                        }}
+                        onClick={() => switchRoom(room.roomId)}
                       >
-                        <div
-                          className="room-item-content"
-                          onClick={() => switchRoom(room.roomId)}
-                        >
-                          <div
-                            className="room-item-avatar"
-                            style={{
-                              backgroundColor:
-                                rooms[room.roomId]?.color ||
-                                "var(--primary-color)",
-                            }}
-                          >
-                            <span
-                              className="unread-count"
-                              style={{
-                                color: getContrastingColor(
-                                  rooms[room.roomId]?.color ||
-                                    "var(--primary-color)"
-                                ),
-                              }}
-                            >
-                              {unreadCounts[room.roomId] > 99
-                                ? "99+"
-                                : unreadCounts[room.roomId] || 0}
-                            </span>
+                        <div className="room-item-header">
+                          <div className="room-item-name">
+                            Room #{room.roomId}
                           </div>
-                          <div className="room-item-details">
-                            <div className="room-item-name">
-                              Room #{room.roomId}
-                              {room.isPrivate && (
-                                <span className="private-badge mini">P</span>
-                              )}
-                            </div>
-                            <div className="room-item-info">
-                              {allRoomsParticipants[room.roomId]?.length || 0}{" "}
-                              users
-                            </div>
+                          <div className="room-item-count">
+                            {allRoomsParticipants[room.roomId]?.length || 0}
                           </div>
+                        </div>
+                        <div className="room-item-users">
+                          {allRoomsParticipants[room.roomId]?.length || 0} members
                         </div>
 
                         <button
@@ -1956,7 +1996,7 @@ function ChatRoom() {
                             <line x1="6" y1="6" x2="18" y2="18"></line>
                           </svg>
                         </button>
-                      </li>
+                      </div>
 
                       {/*sohamghosh-jellylemonshake-23bps1146 */
                       /* UPDATED: Changed the participants panel to always render with conditional className */}
@@ -2073,8 +2113,46 @@ function ChatRoom() {
                     </React.Fragment>
                   );
                 })}
-            </ul>
-          )}
+              </div>
+            )}
+          </div>
+
+          {/* Members Section */}
+          <div className="members-section">
+            <div className="members-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              Members
+              <span className="members-count">
+                {participants.length}
+              </span>
+            </div>
+            <div className="members-list">
+              {participants.map((participant, index) => (
+                <div key={index} className="member-item">
+                  <div 
+                    className="member-avatar"
+                    style={{ backgroundColor: participant.color || '#6366f1' }}
+                  >
+                    {participant.username.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="member-info">
+                    <div className="member-name">
+                      {participant.username}
+                      {participant.username === getUserIdentifier() && " (You)"}
+                    </div>
+                    <div className="member-role">
+                      {participant.isCreator ? "Creator" : "Member"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="sidebar-footer" ref={userMenuRef}>
@@ -2188,216 +2266,13 @@ function ChatRoom() {
             : {}
         }
       >
-        <div className="chat-header">
-          <div className="room-info">
-            <h1>Room #{roomId}</h1>
-            {roomInfo?.isPrivate && (
-              <span className="private-badge">Private</span>
-            )}
-            {/* Connection Status Indicator */}
-            <span 
-              className={`connection-status ${socketConnected ? 'connected' : 'disconnected'}`}
-              title={socketConnected ? 'Connected to real-time chat' : 'Connecting...'}
-            >
-              <span className="status-dot"></span>
-              {socketConnected ? 'Online' : 'Connecting...'}
-            </span>
-            {/* Add save room button here */}
-            {isAuthenticated && (
-              <button
-                className={`save-room-button ${isRoomSaved ? "saved" : ""}`}
-                onClick={toggleSaveRoom}
-                title={isRoomSaved ? "Unsave this room" : "Save this room"}
-              >
-                {isRoomSaved ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                  </svg>
-                )}
-              </button>
-            )}
-          </div>
 
-          <div className="room-actions">
-            {/* Add search button and container here */}
-            <div className="search-container">
-              <button
-                className="search-button"
-                onClick={toggleSearch}
-                title="Search messages"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-              </button>
-              <div
-                ref={searchContainerRef}
-                className={`search-input-container ${
-                  isSearchOpen ? "active" : ""
-                }`}
-              >
-                <svg
-                  className="search-icon"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
 
-                <input
-                  type="text"
-                  className="search-input"
-                  placeholder="Search messages..."
-                  value={searchQuery}
-                  onChange={handleSearch}
-                  autoFocus={isSearchOpen}
-                />
+        {/* Main Chat Area */}
+        <div className="main-chat">
 
-                {searchQuery && (
-                  <>
-                    <div className="search-counter">
-                      {searchResults.length > 0 ? (
-                        <span className="result-count">
-                          {currentSearchResultIndex + 1} of{" "}
-                          {searchResults.length}
-                        </span>
-                      ) : (
-                        <span className="no-results">No results</span>
-                      )}
-                    </div>
-
-                    {searchResults.length > 1 && (
-                      <div className="search-navigation">
-                        <button
-                          className="search-nav-button"
-                          onClick={() => navigateSearchResults("prev")}
-                          title="Previous result"
-                          disabled={searchResults.length <= 1}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="18 15 12 9 6 15"></polyline>
-                          </svg>
-                        </button>
-                        <button
-                          className="search-nav-button"
-                          onClick={() => navigateSearchResults("next")}
-                          title="Next result"
-                          disabled={searchResults.length <= 1}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                          </svg>
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-
-            <button onClick={copyRoomLink} className="copy-button">
-              Share Room
-            </button>
-            <button 
-              onClick={() => setShowInstantMeet(true)} 
-              className="instant-meet-button"
-              title="Start instant meeting"
-            >
-              🎥 Start Meeting
-            </button>
-            <button 
-              onClick={() => setShowMeetingScheduler(true)} 
-              className="meeting-button"
-              title="Schedule a meeting"
-            >
-              📅 Schedule Meeting
-            </button>
-            {isUserAdmin && (
-              <button 
-                onClick={() => setShowAdminPanel(true)} 
-                className="admin-button"
-                title="Room administration"
-              >
-                ⚙️ Admin Panel
-              </button>
-            )}
-            <button 
-              onClick={() => setShowMeetingsList(true)} 
-              className="meetings-button"
-              title="View scheduled meetings"
-            >
-              📅 Meetings
-            </button>
-            <button onClick={leaveRoom} className="leave-button">
-              Leave Room
-            </button>
-          </div>
-        </div>
-
-        <div style={{ margin: '1rem 0' }}>
+          {/* Code Execution Area */}
+          <div style={{ margin: '1rem 0' }}>
   <button onClick={() => setExecutionMode((m) => !m)} style={{ padding: '0.5rem 1rem' }}>
     {executionMode ? 'Exit Execution Mode' : 'I want to execute code'}
   </button>
@@ -2771,7 +2646,9 @@ function ChatRoom() {
             </form>
           </div>
         </div>
-      </div>
+        </div> {/* End of main-chat */}
+        </div> {/* End of main-content */}
+      </div> {/* End of chat-container */}
 
       {showLoginPrompt && (
         <div
