@@ -3,6 +3,46 @@ const router = express.Router();
 const ChatRoom = require('../models/ChatRoom');
 const Message = require('../models/Message');
 
+// Debug endpoint to list all rooms
+router.get('/debug/all', async (req, res) => {
+  try {
+    const rooms = await ChatRoom.find({}, 'name createdBy participants createdAt').sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      count: rooms.length,
+      rooms: rooms.map(room => ({
+        name: room.name,
+        createdBy: room.createdBy,
+        participantCount: room.participants.length,
+        createdAt: room.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching all rooms:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Debug endpoint to test database connection
+router.get('/debug/test', async (req, res) => {
+  try {
+    const count = await ChatRoom.countDocuments();
+    res.json({
+      success: true,
+      message: 'Database connection working',
+      totalRooms: count,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Database test failed:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Database connection failed',
+      details: error.message 
+    });
+  }
+});
+
 // Create or join a chatroom
 router.post('/', async (req, res) => {
   const { name, createdBy, isPrivate, password, color, participants } = req.body;
@@ -23,7 +63,9 @@ router.post('/', async (req, res) => {
   try {
     console.log('=== CREATE/JOIN ROOM REQUEST ===');
     console.log('Room name:', name);
+    console.log('Sanitized room name:', sanitizedName);
     console.log('Created by:', createdBy);
+    console.log('Sanitized created by:', sanitizedCreatedBy);
     console.log('Participants:', participants);
     
     let room = await ChatRoom.findOne({ name: sanitizedName });
@@ -114,19 +156,28 @@ router.post('/:roomId/join', async (req, res) => {
     
     console.log('=== JOIN ROOM REQUEST ===');
     console.log('Room ID:', roomId);
+    console.log('Sanitized Room ID:', sanitizedRoomId);
     console.log('Username:', username);
+    console.log('Sanitized Username:', sanitizedUsername);
+    
+    // First, let's see what rooms exist in the database
+    const allRooms = await ChatRoom.find({}, 'name createdBy').limit(10);
+    console.log('All rooms in database:', allRooms.map(r => ({ name: r.name, createdBy: r.createdBy })));
     
     // Try to find room with multiple search strategies
     let room = await ChatRoom.findOne({ name: sanitizedRoomId });
+    console.log('Exact match search result:', room ? 'FOUND' : 'NOT FOUND');
     
     // If not found, try case-insensitive search
     if (!room) {
       room = await ChatRoom.findOne({ name: { $regex: new RegExp(`^${sanitizedRoomId}$`, 'i') } });
+      console.log('Case-insensitive search result:', room ? 'FOUND' : 'NOT FOUND');
     }
     
     // If still not found, try with trimmed search
     if (!room) {
       room = await ChatRoom.findOne({ name: sanitizedRoomId.trim() });
+      console.log('Trimmed search result:', room ? 'FOUND' : 'NOT FOUND');
     }
     
     console.log('Room found:', room ? 'YES' : 'NO');
@@ -151,7 +202,14 @@ router.post('/:roomId/join', async (req, res) => {
       
       if (!room) {
         console.log('Room still not found after retry');
-        return res.status(404).json({ error: 'Room not found' });
+        return res.status(404).json({ 
+          error: 'Room not found. The room may have been deleted or the PIN is incorrect.',
+          debug: {
+            searchedRoomId: sanitizedRoomId,
+            totalRoomsInDB: allRooms.length,
+            availableRooms: allRooms.map(r => r.name)
+          }
+        });
       }
       console.log('Room found on retry!');
     }
