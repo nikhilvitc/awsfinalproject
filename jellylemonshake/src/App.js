@@ -8,6 +8,7 @@ import {
 import { AnimatePresence } from "framer-motion";
 import { motion } from "framer-motion";
 import { AuthProvider } from "./components/AuthContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Home from "./components/Home";
 import ChatRoom from "./components/ChatRoom";
 import RoomJoin from "./components/RoomJoin";
@@ -168,13 +169,15 @@ function AnimatedRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="app-container">
-          <AnimatedRoutes />
-        </div>
-      </Router>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <div className="app-container">
+            <AnimatedRoutes />
+          </div>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

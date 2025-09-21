@@ -6,25 +6,39 @@ const Message = require('../models/Message');
 // Create or join a chatroom
 router.post('/', async (req, res) => {
   const { name, createdBy, isPrivate, password, color, participants } = req.body;
+  
+  // Input validation
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    return res.status(400).json({ error: 'Room name is required and must be a non-empty string' });
+  }
+  
+  if (!createdBy || typeof createdBy !== 'string' || createdBy.trim().length === 0) {
+    return res.status(400).json({ error: 'Creator name is required and must be a non-empty string' });
+  }
+  
+  // Sanitize inputs
+  const sanitizedName = name.trim();
+  const sanitizedCreatedBy = createdBy.trim();
+  
   try {
     console.log('=== CREATE/JOIN ROOM REQUEST ===');
     console.log('Room name:', name);
     console.log('Created by:', createdBy);
     console.log('Participants:', participants);
     
-    let room = await ChatRoom.findOne({ name });
+    let room = await ChatRoom.findOne({ name: sanitizedName });
     console.log('Existing room found:', room ? 'YES' : 'NO');
     
     if (!room) {
       // Create new room
-      console.log('Creating new room:', name);
+      console.log('Creating new room:', sanitizedName);
       room = await ChatRoom.create({ 
-        name,
-        createdBy: createdBy || 'Anonymous',
+        name: sanitizedName,
+        createdBy: sanitizedCreatedBy,
         isPrivate: isPrivate || false,
         password: isPrivate ? password : null,
         color: color || '#007bff',
-        admins: [createdBy || 'Anonymous'],
+        admins: [sanitizedCreatedBy],
         participants: participants || []
       });
       console.log('Room created successfully:', room._id);
@@ -58,15 +72,24 @@ router.post('/:roomId/join', async (req, res) => {
     const { roomId } = req.params;
     const { username, password } = req.body;
     
-    if (!username) {
-      return res.status(401).json({ error: 'Authentication required' });
+    // Input validation
+    if (!roomId || typeof roomId !== 'string' || roomId.trim().length === 0) {
+      return res.status(400).json({ error: 'Room ID is required and must be a non-empty string' });
     }
+    
+    if (!username || typeof username !== 'string' || username.trim().length === 0) {
+      return res.status(401).json({ error: 'Username is required and must be a non-empty string' });
+    }
+    
+    // Sanitize inputs
+    const sanitizedRoomId = roomId.trim();
+    const sanitizedUsername = username.trim();
     
     console.log('=== JOIN ROOM REQUEST ===');
     console.log('Room ID:', roomId);
     console.log('Username:', username);
     
-    const room = await ChatRoom.findOne({ name: roomId });
+    const room = await ChatRoom.findOne({ name: sanitizedRoomId });
     console.log('Room found:', room ? 'YES' : 'NO');
     if (room) {
       console.log('Room details:', {
@@ -82,9 +105,9 @@ router.post('/:roomId/join', async (req, res) => {
     }
     
     // Check if user is already a member
-    const isAlreadyMember = room.participants.some(p => p.username === username) || 
-                           room.createdBy === username || 
-                           room.admins.includes(username);
+    const isAlreadyMember = room.participants.some(p => p.username === sanitizedUsername) || 
+                           room.createdBy === sanitizedUsername || 
+                           room.admins.includes(sanitizedUsername);
     
     if (isAlreadyMember) {
       return res.json({ 
@@ -101,7 +124,7 @@ router.post('/:roomId/join', async (req, res) => {
     
     // Add user to room
     const newParticipant = {
-      username,
+      username: sanitizedUsername,
       isCreator: false,
       isAdmin: false,
       joinedAt: new Date(),
@@ -261,12 +284,32 @@ router.post('/:roomId/messages', async (req, res) => {
   try {
     const { roomId } = req.params;
     const { user, text, code, language, output } = req.body;
-    console.log('=== CREATING MESSAGE FOR ROOM:', roomId, '===');
-    console.log('Message data:', { user, text, code, language });
+    
+    // Input validation
+    if (!roomId || typeof roomId !== 'string' || roomId.trim().length === 0) {
+      return res.status(400).json({ error: 'Room ID is required and must be a non-empty string' });
+    }
+    
+    if (!user || typeof user !== 'string' || user.trim().length === 0) {
+      return res.status(400).json({ error: 'User is required and must be a non-empty string' });
+    }
+    
+    if (!text && !code) {
+      return res.status(400).json({ error: 'Either text or code is required' });
+    }
+    
+    // Sanitize inputs
+    const sanitizedRoomId = roomId.trim();
+    const sanitizedUser = user.trim();
+    const sanitizedText = text ? text.trim() : '';
+    const sanitizedCode = code ? code.trim() : '';
+    
+    console.log('=== CREATING MESSAGE FOR ROOM:', sanitizedRoomId, '===');
+    console.log('Message data:', { user: sanitizedUser, text: sanitizedText, code: sanitizedCode, language });
     
     // First find the room by name/pin to get the MongoDB ObjectId
-    console.log('Step 1: Looking for room with name:', roomId);
-    const room = await ChatRoom.findOne({ name: roomId });
+    console.log('Step 1: Looking for room with name:', sanitizedRoomId);
+    const room = await ChatRoom.findOne({ name: sanitizedRoomId });
     
     if (!room) {
       console.log('Step 2: Room not found, returning 404');
@@ -279,9 +322,9 @@ router.post('/:roomId/messages', async (req, res) => {
     console.log('Step 3: Creating message...');
     const messageData = { 
       room: room._id, 
-      user, 
-      text, 
-      code, 
+      user: sanitizedUser, 
+      text: sanitizedText, 
+      code: sanitizedCode, 
       language, 
       output 
     };
