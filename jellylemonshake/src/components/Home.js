@@ -525,6 +525,17 @@ function Home() {
         </button>
         <button
           className="btn btn-secondary"
+          onClick={() => {
+            console.log('TEST: Force showing dialog');
+            setDialogVisible(true);
+            setView("create");
+          }}
+          style={{ marginTop: '10px', backgroundColor: 'red', color: 'white' }}
+        >
+          TEST DIALOG
+        </button>
+        <button
+          className="btn btn-secondary"
           onClick={() => showDialogView("join")}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -934,7 +945,10 @@ function Home() {
         <div
           className={`dialog-overlay ${dialogVisible ? "visible" : ""}`}
           onClick={hideDialogView}
-          style={{ display: dialogVisible ? 'flex' : 'none' }}
+          style={{ 
+            display: dialogVisible ? 'flex' : 'none',
+            backgroundColor: dialogVisible ? 'rgba(255, 0, 0, 0.5)' : 'transparent'
+          }}
         >
           <div className="form-container" onClick={(e) => e.stopPropagation()}>
             {console.log('Current view:', view, 'Dialog visible:', dialogVisible)}
