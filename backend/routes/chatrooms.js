@@ -7,7 +7,14 @@ const Message = require('../models/Message');
 router.post('/', async (req, res) => {
   const { name, createdBy, isPrivate, password, color, participants } = req.body;
   try {
+    console.log('=== CREATE/JOIN ROOM REQUEST ===');
+    console.log('Room name:', name);
+    console.log('Created by:', createdBy);
+    console.log('Participants:', participants);
+    
     let room = await ChatRoom.findOne({ name });
+    console.log('Existing room found:', room ? 'YES' : 'NO');
+    
     if (!room) {
       // Create new room
       console.log('Creating new room:', name);
@@ -21,6 +28,7 @@ router.post('/', async (req, res) => {
         participants: participants || []
       });
       console.log('Room created successfully:', room._id);
+      console.log('Room name in DB:', room.name);
     } else {
       // Room exists, add participant if provided
       console.log('Room exists, adding participant if needed:', name);
@@ -54,7 +62,21 @@ router.post('/:roomId/join', async (req, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
     
+    console.log('=== JOIN ROOM REQUEST ===');
+    console.log('Room ID:', roomId);
+    console.log('Username:', username);
+    
     const room = await ChatRoom.findOne({ name: roomId });
+    console.log('Room found:', room ? 'YES' : 'NO');
+    if (room) {
+      console.log('Room details:', {
+        name: room.name,
+        createdBy: room.createdBy,
+        participants: room.participants.length,
+        admins: room.admins.length
+      });
+    }
+    
     if (!room) {
       return res.status(404).json({ error: 'Room not found' });
     }

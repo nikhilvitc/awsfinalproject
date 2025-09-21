@@ -256,84 +256,40 @@ function Home() {
       const userColor = generateRandomColor();
 
       try {
-        // Try to get the room first
+        // Use the new join endpoint
         console.log('Attempting to join room:', pinString, 'as user:', username);
-        const getResponse = await fetch(`${apiUrl}/api/rooms/${pinString}`);
-        
-        if (getResponse.ok) {
-          const roomData = await getResponse.json();
+        const joinResponse = await fetch(`${apiUrl}/api/rooms/${pinString}/join`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: username,
+            password: roomPassword || undefined // Add password support if needed
+          }),
+        });
+
+        if (joinResponse.ok) {
+          const joinData = await joinResponse.json();
           room = {
             id: pinString,
-            createdBy: roomData.createdBy,
-            isPrivate: roomData.isPrivate || false,
-            password: roomData.password,
-            participants: roomData.participants || [],
-            color: roomData.color
+            createdBy: joinData.room.createdBy,
+            isPrivate: joinData.room.isPrivate || false,
+            password: joinData.room.password,
+            participants: joinData.room.participants || [],
+            color: joinData.room.color
           };
-          
-          // Add current user to the room if they're not already in it
-          const existingParticipant = room.participants.find(p => p.username === username);
-          if (!existingParticipant) {
-            console.log('Adding user to existing room:', pinString);
-            const joinResponse = await fetch(`${apiUrl}/api/rooms`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                name: pinString,
-                participants: [{
-                  username: username,
-                  color: userColor,
-                  isCreator: false
-                }]
-              }),
-            });
-
-            if (joinResponse.ok) {
-              const updatedRoomData = await joinResponse.json();
-              room.participants = updatedRoomData.participants;
-              console.log('Successfully joined existing room:', pinString);
-            } else {
-              console.warn('Failed to join existing room:', joinResponse.status);
-            }
+          console.log('Successfully joined room:', pinString);
+        } else {
+          const errorData = await joinResponse.json();
+          if (joinResponse.status === 404) {
+            setError(`Room "${pinString}" not found. The room may not exist or there may be a connection issue. Try creating a new room with this PIN.`);
+          } else if (joinResponse.status === 403) {
+            setError(errorData.error || 'Access denied. You may need a password for this private room.');
           } else {
-            console.log('User already in room:', pinString);
+            setError(errorData.error || 'Failed to join room. Please try again.');
           }
-        } else if (getResponse.status === 404) {
-          // Room doesn't exist on backend, try to create/join it
-          console.log('Room not found on backend, attempting to create/join');
-          
-          const createResponse = await fetch(`${apiUrl}/api/rooms`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              name: pinString,
-              createdBy: username,
-              isPrivate: false,
-              color: userColor,
-              participants: [{
-                username: username,
-                color: userColor,
-                isCreator: true // This user is creating the room since it didn't exist
-              }]
-            }),
-          });
-
-          if (createResponse.ok) {
-            const roomData = await createResponse.json();
-            room = {
-              id: pinString,
-              createdBy: roomData.createdBy,
-              isPrivate: roomData.isPrivate || false,
-              password: roomData.password,
-              participants: roomData.participants || [],
-              color: roomData.color
-            };
-            console.log('Successfully joined/created room:', pinString);
-          }
+          return;
         }
       } catch (apiError) {
         console.log('Backend check failed, checking localStorage:', apiError);
