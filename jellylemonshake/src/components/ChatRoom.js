@@ -35,6 +35,21 @@ function ChatRoom() {
     return authUser?.email || authUser?.username || 'Anonymous';
   };
 
+  const getDisplayUsername = () => {
+    // First check if user has a stored username
+    if (authUser?.username && authUser.username !== authUser.email) {
+      return authUser.username;
+    }
+    
+    // If no username, extract from email (part before @)
+    if (authUser?.email) {
+      return authUser.email.split('@')[0];
+    }
+    
+    // Fallback to stored username or Anonymous
+    return authUser?.username || 'Anonymous';
+  };
+
   // [All state variables and refs remain the same]
   const [user, setUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -976,14 +991,17 @@ function ChatRoom() {
       }
 
       setRoomInfo(room);
-      setParticipants(room.participants);
+      // Use unique participants if available, otherwise fall back to regular participants
+      setParticipants(room.uniqueParticipants || room.participants || []);
       
       // Check if current user is admin
       const currentUsername = getUserIdentifier();
+      const displayUsername = getDisplayUsername();
       const isAdmin = room.createdBy === currentUsername || 
-                     (room.admins && room.admins.includes(currentUsername)) ||
+                     room.createdBy === displayUsername ||
+                     (room.admins && (room.admins.includes(currentUsername) || room.admins.includes(displayUsername))) ||
                      (room.participants && room.participants.some(p => 
-                       p.username === currentUsername && p.isAdmin
+                       (p.username === currentUsername || p.username === displayUsername) && p.isAdmin
                      ));
       console.log('Admin check:', {
         currentUsername,
@@ -997,8 +1015,9 @@ function ChatRoom() {
       const roomParticipantsMap = {};
       userRooms.forEach((userRoom) => {
         const currentRoom = rooms[userRoom.roomId];
-        if (currentRoom && currentRoom.participants) {
-          roomParticipantsMap[userRoom.roomId] = currentRoom.participants;
+        if (currentRoom) {
+          // Use unique participants if available, otherwise fall back to regular participants
+          roomParticipantsMap[userRoom.roomId] = currentRoom.uniqueParticipants || currentRoom.participants || [];
         }
       });
       setAllRoomsParticipants(roomParticipantsMap);
@@ -1282,7 +1301,7 @@ function ChatRoom() {
     const messageData = {
       roomId,
       user: {
-        username: getUserIdentifier(),
+        username: getDisplayUsername(),
         email: authUser.email,
         name: authUser.name,
         color: authUser.color || '#007bff'
