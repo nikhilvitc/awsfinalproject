@@ -165,3 +165,33 @@
     font-size: 0.95rem;
   }
 }
+
+/* Missing CSS Classes */
+.error-message {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.room-join-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.room-join-footer a {
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease-in-out;
+}
+
+.room-join-footer a:hover {
+  color: #4f46e5;
+  text-decoration: underline;
+}
