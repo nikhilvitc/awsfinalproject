@@ -9,7 +9,12 @@ function Home() {
   const [password, setPassword] = useState("");
   const [roomsExpanded, setRoomsExpanded] = useState(false);
   const myRoomsRef = useRef(null);
-  const { user } = useAuth();
+  const { user, authUser } = useAuth();
+
+  // Helper function to get user identifier consistently
+  const getUserIdentifier = () => {
+    return authUser?.email || authUser?.username || user?.email || user?.username || username || 'Anonymous';
+  };
   const [view, setView] = useState("select");
   const [showRoomsList, setShowRoomsList] = useState(false);
   const [joinedRooms, setJoinedRooms] = useState([]);
@@ -100,14 +105,15 @@ function Home() {
       const userColor = generateRandomColor();
 
       // Create room data
+      const userIdentifier = getUserIdentifier();
       const roomData = {
         name: pin,
-        createdBy: username,
+        createdBy: userIdentifier,
         isPrivate: isPrivate,
         password: isPrivate ? password : null,
         color: roomColor,
         participants: [{
-          username,
+          username: userIdentifier,
           isCreator: true,
           color: userColor,
         }]
@@ -257,7 +263,8 @@ function Home() {
 
       try {
         // Use the new join endpoint with retry mechanism
-        console.log('Attempting to join room:', pinString, 'as user:', username);
+        const userIdentifier = getUserIdentifier();
+        console.log('Attempting to join room:', pinString, 'as user:', userIdentifier);
         
         let joinResponse;
         let retryCount = 0;
@@ -270,24 +277,25 @@ function Home() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              username: username,
+              username: userIdentifier,
               password: roomPassword || undefined // Add password support if needed
             }),
           });
 
-          if (joinResponse.ok) {
-            const joinData = await joinResponse.json();
-            room = {
-              id: pinString,
-              createdBy: joinData.room.createdBy,
-              isPrivate: joinData.room.isPrivate || false,
-              password: joinData.room.password,
-              participants: joinData.room.participants || [],
-              color: joinData.room.color
-            };
-            console.log('Successfully joined room:', pinString);
-            break; // Success, exit retry loop
-          } else if (joinResponse.status === 404 && retryCount < maxRetries) {
+        if (joinResponse.ok) {
+          const joinData = await joinResponse.json();
+          room = {
+            id: pinString,
+            createdBy: joinData.room.createdBy,
+            isPrivate: joinData.room.isPrivate || false,
+            password: joinData.room.password,
+            participants: joinData.room.participants || [],
+            color: joinData.room.color
+          };
+          console.log('Successfully joined room:', pinString);
+          console.log('Room data received:', room);
+          break; // Success, exit retry loop
+        } else if (joinResponse.status === 404 && retryCount < maxRetries) {
             // Room not found, wait a bit and retry
             console.log(`Room not found, retrying... (attempt ${retryCount + 1}/${maxRetries + 1})`);
             await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
@@ -340,9 +348,10 @@ function Home() {
       }
 
       // Add user to room participants and update backend
-      if (room && !room.participants.some((p) => p.username === username)) {
+      const userIdentifier = getUserIdentifier();
+      if (room && !room.participants.some((p) => p.username === userIdentifier)) {
         const newParticipant = {
-          username,
+          username: userIdentifier,
           isCreator: false,
           joinedAt: new Date().toISOString(),
           color: userColor,
@@ -387,7 +396,7 @@ function Home() {
           name: `Room #${pinString}`,
           joinedAt: new Date().toISOString(),
           isPrivate: room.isPrivate,
-          isCreator: room.createdBy === username,
+          isCreator: room.createdBy === userIdentifier,
           lastActivity: new Date().toISOString(),
         });
         localStorage.setItem("joinedRooms", JSON.stringify(userRooms));
@@ -397,7 +406,7 @@ function Home() {
       localStorage.setItem(
         "chatUser",
         JSON.stringify({
-          username,
+          username: userIdentifier,
           roomId: pinString,
           joinedAt: new Date().toISOString(),
           color: userColor, // Store user's color
@@ -405,10 +414,12 @@ function Home() {
       );
 
       // Navigate to room
+      console.log('About to navigate to room:', pinString);
+      console.log('Room object before navigation:', room);
       navigate(`/room/${pinString}`);
     } catch (err) {
-      setError("Error joining room");
-      console.error(err);
+      console.error('Error in handleJoinRoom:', err);
+      setError(`Error joining room: ${err.message}`);
     }
   };
 

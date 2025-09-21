@@ -37,7 +37,7 @@ function RoomJoin() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: user.username || user.email,
+          username: user.email || user.username,
           password: password || undefined
         })
       });
