@@ -532,6 +532,44 @@ function MessageItem({
             <div className="code-action-buttons">
               <button
                 className="code-action-button"
+                onClick={executeCode}
+                title={executingCode ? "Executing..." : "Run code"}
+                disabled={executingCode}
+              >
+                {executingCode ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="spinning"
+                  >
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 6v6l4 2"></path>
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polygon points="5,3 19,12 5,21"></polygon>
+                  </svg>
+                )}
+              </button>
+              <button
+                className="code-action-button"
                 onClick={copyCodeToClipboard}
                 title="Copy code"
               >

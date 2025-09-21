@@ -718,3 +718,17 @@
 .message-item.current-user .message-bubble {
   animation: messageOutgoing 0.3s ease-out forwards;
 }
+
+/* Spinning animation for loading states */
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

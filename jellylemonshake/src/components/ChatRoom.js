@@ -1556,6 +1556,7 @@ function ChatRoom() {
       // Hide emoji picker and reset button states
       setShowEmojiPicker(false);
       setIsEmojiOn(false);
+      // Reset code state after sending message
       setIsCodeOn(false);
       setShowLanguageSelector(false);
 

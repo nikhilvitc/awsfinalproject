@@ -7,6 +7,7 @@ const messageSchema = new mongoose.Schema({
   code: { type: String },
   language: { type: String },
   output: { type: String },
+  isCode: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 

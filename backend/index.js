@@ -119,7 +119,7 @@ io.on('connection', (socket) => {
   // Handle new message
   socket.on('send-message', async (data) => {
     try {
-      const { roomId, user, text, code, language, output } = data;
+      const { roomId, user, text, code, language, output, isCode } = data;
       console.log('=== SOCKET.IO MESSAGE RECEIVED ===');
       console.log('Room ID:', roomId);
       console.log('User:', user);
@@ -148,7 +148,8 @@ io.on('connection', (socket) => {
           text,
           code,
           language,
-          output
+          output,
+          isCode: isCode || false
         });
         
         // Broadcast message to all users in the room
@@ -160,6 +161,7 @@ io.on('connection', (socket) => {
           code: message.code,
           language: message.language,
           output: message.output,
+          isCode: message.isCode,
           createdAt: message.createdAt
         });
         
@@ -174,7 +176,8 @@ io.on('connection', (socket) => {
         text,
         code,
         language,
-        output
+        output,
+        isCode: isCode || false
       });
       
       // Broadcast message to all users in the room
@@ -186,6 +189,7 @@ io.on('connection', (socket) => {
         code: message.code,
         language: message.language,
         output: message.output,
+        isCode: message.isCode,
         createdAt: message.createdAt
       });
       
