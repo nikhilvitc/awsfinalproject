@@ -2271,79 +2271,63 @@ function ChatRoom() {
         </div>
       </div>
 
-      <div
-        className="chat-main"
-        style={
-          roomPalette
-            ? {
-                "--room-base-color": roomPalette.baseColor,
-                "--room-lighter-color": roomPalette.lighterShade,
-                "--room-darker-color": roomPalette.darkerShade,
-                "--room-mid-color": roomPalette.midShade,
-                background: roomPalette.lighterShade,
-              }
-            : {}
-        }
-      >
+      {/* Main Chat Area */}
+      <div className="chat-main">
+          <div className="main-chat">
+            {/* Code Execution Area */}
+            <div style={{ margin: '1rem 0' }}>
+              <button onClick={() => setExecutionMode((m) => !m)} style={{ padding: '0.5rem 1rem' }}>
+                {executionMode ? 'Exit Execution Mode' : 'I want to execute code'}
+              </button>
+            </div>
 
+            {executionMode && (
+              <div style={{ marginBottom: '1rem', background: '#222', padding: '1rem', borderRadius: '8px' }}>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <label style={{ color: '#fff', marginRight: '0.5rem' }}>Language:</label>
+                  <select value={runLanguage} onChange={e => setRunLanguage(e.target.value)}>
+                    {codeLanguages.map(lang => (
+                      <option key={lang.id} value={lang.id}>{lang.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <textarea
+                  value={codeToRun}
+                  onChange={e => setCodeToRun(e.target.value)}
+                  placeholder="Type code to execute..."
+                  rows={8}
+                  style={{ width: '100%', fontFamily: 'monospace', fontSize: '1rem', background: '#1a1a1a', color: '#fff', border: '1px solid #444', borderRadius: '4px', marginBottom: '0.5rem' }}
+                />
+                <button
+                  onClick={async () => {
+                    setIsRunning(true);
+                    setRunOutput("");
+                    try {
+                      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
+                      const res = await fetch(`${apiUrl}/api/jdoodle/execute`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ code: codeToRun, language: runLanguage })
+                      });
+                      const data = await res.json();
+                      setRunOutput(data.output || data.error || JSON.stringify(data));
+                    } catch (err) {
+                      setRunOutput("Error: " + err.message);
+                    }
+                    setIsRunning(false);
+                  }}
+                  disabled={isRunning || !codeToRun.trim()}
+                  style={{ padding: '0.5rem 1rem', marginRight: '1rem' }}
+                >
+                  {isRunning ? 'Running...' : 'Run'}
+                </button>
+                {runOutput && (
+                  <pre style={{ background: '#111', color: '#0f0', padding: '0.75rem', borderRadius: '4px', marginTop: '0.5rem', whiteSpace: 'pre-wrap' }}>{runOutput}</pre>
+                )}
+              </div>
+            )}
 
-        {/* Main Chat Area */}
-        <div className="main-chat">
-
-          {/* Code Execution Area */}
-          <div style={{ margin: '1rem 0' }}>
-  <button onClick={() => setExecutionMode((m) => !m)} style={{ padding: '0.5rem 1rem' }}>
-    {executionMode ? 'Exit Execution Mode' : 'I want to execute code'}
-  </button>
-</div>
-
-{executionMode && (
-  <div style={{ marginBottom: '1rem', background: '#222', padding: '1rem', borderRadius: '8px' }}>
-    <div style={{ marginBottom: '0.5rem' }}>
-      <label style={{ color: '#fff', marginRight: '0.5rem' }}>Language:</label>
-      <select value={runLanguage} onChange={e => setRunLanguage(e.target.value)}>
-        {codeLanguages.map(lang => (
-          <option key={lang.id} value={lang.id}>{lang.name}</option>
-        ))}
-      </select>
-    </div>
-    <textarea
-      value={codeToRun}
-      onChange={e => setCodeToRun(e.target.value)}
-      placeholder="Type code to execute..."
-      rows={8}
-      style={{ width: '100%', fontFamily: 'monospace', fontSize: '1rem', background: '#1a1a1a', color: '#fff', border: '1px solid #444', borderRadius: '4px', marginBottom: '0.5rem' }}
-    />
-    <button
-      onClick={async () => {
-        setIsRunning(true);
-        setRunOutput("");
-        try {
-          const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
-          const res = await fetch(`${apiUrl}/api/jdoodle/execute`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code: codeToRun, language: runLanguage })
-          });
-          const data = await res.json();
-          setRunOutput(data.output || data.error || JSON.stringify(data));
-        } catch (err) {
-          setRunOutput("Error: " + err.message);
-        }
-        setIsRunning(false);
-      }}
-      disabled={isRunning || !codeToRun.trim()}
-      style={{ padding: '0.5rem 1rem', marginRight: '1rem' }}
-    >
-      {isRunning ? 'Running...' : 'Run'}
-    </button>
-    {runOutput && (
-      <pre style={{ background: '#111', color: '#0f0', padding: '0.75rem', borderRadius: '4px', marginTop: '0.5rem', whiteSpace: 'pre-wrap' }}>{runOutput}</pre>
-    )}
-  </div>
-)}
-
-        <div className="chat-content">
+            <div className="chat-content">
           <div className="messages-container" style={{ position: "relative" }}>
             {/*sohamghosh-jellylemonshake-23bps1146 */
             /* IMPROVED: Added overflow-anchor: none to prevent browser's automatic scroll anchoring */}
@@ -2627,11 +2611,7 @@ function ChatRoom() {
 
               {/* Textarea for message input */
               /*sohamghosh-jellylemonshake-23bps1146 */}
-              <div
-                className={`message-input-container ${
-                  isCodeOn ? "code-mode" : ""
-                }`}
-              >
+              <div className="message-input-wrapper">
                 <textarea
                   ref={messageInputRef}
                   value={messageInput}
@@ -2663,11 +2643,11 @@ function ChatRoom() {
                 Send
               </button>
             </form>
+            </div>
           </div>
         </div>
-        </div> {/* End of main-chat */}
-        </div> {/* End of main-content */}
-      </div> {/* End of chat-container */}
+      </div>
+      </div> {/* End of main-content */}
 
       {showLoginPrompt && (
         <div

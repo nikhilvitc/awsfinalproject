@@ -52,4 +52,70 @@ chatRoomSchema.methods.hasPermission = function(username, permission) {
   return participant && participant.permissions[permission];
 };
 
+// Method to get unique participant count (including creator and admins)
+chatRoomSchema.methods.getUniqueParticipantCount = function() {
+  const uniqueUsernames = new Set();
+  
+  // Add creator
+  if (this.createdBy) {
+    uniqueUsernames.add(this.createdBy);
+  }
+  
+  // Add admins
+  this.admins.forEach(admin => {
+    if (admin) uniqueUsernames.add(admin);
+  });
+  
+  // Add participants
+  this.participants.forEach(participant => {
+    if (participant.username) uniqueUsernames.add(participant.username);
+  });
+  
+  return uniqueUsernames.size;
+};
+
+// Method to get all unique participants
+chatRoomSchema.methods.getAllUniqueParticipants = function() {
+  const uniqueParticipants = new Map();
+  
+  // Add creator
+  if (this.createdBy) {
+    uniqueParticipants.set(this.createdBy, {
+      username: this.createdBy,
+      isCreator: true,
+      isAdmin: true,
+      joinedAt: this.createdAt,
+      color: this.color || '#007bff'
+    });
+  }
+  
+  // Add admins
+  this.admins.forEach(admin => {
+    if (admin && !uniqueParticipants.has(admin)) {
+      uniqueParticipants.set(admin, {
+        username: admin,
+        isCreator: admin === this.createdBy,
+        isAdmin: true,
+        joinedAt: this.createdAt,
+        color: this.color || '#007bff'
+      });
+    }
+  });
+  
+  // Add participants
+  this.participants.forEach(participant => {
+    if (participant.username && !uniqueParticipants.has(participant.username)) {
+      uniqueParticipants.set(participant.username, {
+        username: participant.username,
+        isCreator: participant.username === this.createdBy,
+        isAdmin: this.admins.includes(participant.username),
+        joinedAt: participant.joinedAt,
+        color: participant.color || '#007bff'
+      });
+    }
+  });
+  
+  return Array.from(uniqueParticipants.values());
+};
+
 module.exports = mongoose.model('ChatRoom', chatRoomSchema); 

@@ -128,7 +128,15 @@ router.post('/', async (req, res) => {
         }
       }
     }
-    res.json(room);
+    
+    // Get unique participants for response
+    const uniqueParticipants = room.getAllUniqueParticipants();
+    
+    res.json({
+      ...room.toObject(),
+      uniqueParticipants,
+      uniqueParticipantCount: room.getUniqueParticipantCount()
+    });
   } catch (err) {
     console.error('Error creating/joining room:', err);
     res.status(500).json({ error: err.message });
@@ -214,7 +222,7 @@ router.post('/:roomId/join', async (req, res) => {
       console.log('Room found on retry!');
     }
     
-    // Check if user is already a member
+    // Check if user is already a member (check all possible ways)
     const isAlreadyMember = room.participants.some(p => p.username === sanitizedUsername) || 
                            room.createdBy === sanitizedUsername || 
                            room.admins.includes(sanitizedUsername);
@@ -250,10 +258,17 @@ router.post('/:roomId/join', async (req, res) => {
     room.participants.push(newParticipant);
     await room.save();
     
+    // Get unique participants for response
+    const uniqueParticipants = room.getAllUniqueParticipants();
+    
     res.json({ 
       success: true, 
       message: 'Successfully joined room',
-      room 
+      room: {
+        ...room.toObject(),
+        uniqueParticipants,
+        uniqueParticipantCount: room.getUniqueParticipantCount()
+      }
     });
   } catch (err) {
     console.error('Error joining room:', err);
@@ -299,7 +314,14 @@ router.get('/:roomName', async (req, res) => {
       return res.status(403).json({ error: 'Access denied. You must be a member of this room.' });
     }
     
-    res.json(room);
+    // Get unique participants for response
+    const uniqueParticipants = room.getAllUniqueParticipants();
+    
+    res.json({
+      ...room.toObject(),
+      uniqueParticipants,
+      uniqueParticipantCount: room.getUniqueParticipantCount()
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
