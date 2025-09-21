@@ -32,6 +32,26 @@ router.post('/', async (req, res) => {
     if (!room) {
       // Create new room
       console.log('Creating new room:', sanitizedName);
+      // Ensure creator is added as both admin and participant
+      const creatorParticipant = {
+        username: sanitizedCreatedBy,
+        joinedAt: new Date(),
+        isAdmin: true,
+        permissions: {
+          canSendMessages: true,
+          canDeleteMessages: true,
+          canRemoveMembers: true,
+          canManageAdmins: true,
+          canEditRoomSettings: true
+        }
+      };
+      
+      const allParticipants = participants || [];
+      // Add creator if not already in participants
+      if (!allParticipants.some(p => p.username === sanitizedCreatedBy)) {
+        allParticipants.push(creatorParticipant);
+      }
+      
       room = await ChatRoom.create({ 
         name: sanitizedName,
         createdBy: sanitizedCreatedBy,
@@ -39,7 +59,7 @@ router.post('/', async (req, res) => {
         password: isPrivate ? password : null,
         color: color || '#007bff',
         admins: [sanitizedCreatedBy],
-        participants: participants || []
+        participants: allParticipants
       });
       console.log('Room created successfully:', room._id);
       console.log('Room name in DB:', room.name);
