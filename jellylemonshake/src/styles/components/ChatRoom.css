@@ -164,7 +164,7 @@
 
 /* ===== SIDEBAR ===== */
 .sidebar {
-  width: 320px;
+  width: 250px;
   background: white;
   border-right: 1px solid #e2e8f0;
   display: flex;
@@ -667,6 +667,12 @@
 }
 
 /* Responsive Design */
+@media (min-width: 1200px) {
+  .sidebar {
+    width: 220px;
+  }
+}
+
 @media (max-width: 768px) {
   .chat-container {
     flex-direction: column;

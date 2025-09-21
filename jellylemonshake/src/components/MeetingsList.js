@@ -79,14 +79,14 @@ function MeetingsList({ roomId, onClose, isVisible }) {
           
           {loading ? (
             <div className="loading-message">Loading meetings...</div>
-          ) : meetings.length === 0 ? (
+          ) : !Array.isArray(meetings) || meetings.length === 0 ? (
             <div className="no-meetings">
               <p>No meetings scheduled for this room.</p>
               <p>Create a meeting to get started!</p>
             </div>
           ) : (
             <div className="meetings-list">
-              {meetings.map((meeting) => {
+              {Array.isArray(meetings) && meetings.map((meeting) => {
                 const statusInfo = getMeetingStatus(meeting);
                 return (
                   <div key={meeting._id} className="meeting-item">
