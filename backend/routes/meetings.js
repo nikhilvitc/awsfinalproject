@@ -6,6 +6,8 @@ const ChatRoom = require('../models/ChatRoom');
 // Create a new meeting
 router.post('/create', async (req, res) => {
   try {
+    console.log('Meeting creation request received:', req.body);
+    
     const {
       title,
       description,
@@ -21,6 +23,7 @@ router.post('/create', async (req, res) => {
 
     // Validate required fields
     if (!title || !roomId || !organizer || !scheduledTime) {
+      console.log('Validation failed - missing required fields:', { title, roomId, organizer, scheduledTime });
       return res.status(400).json({
         success: false,
         message: 'Missing required fields: title, roomId, organizer, scheduledTime'
@@ -30,6 +33,15 @@ router.post('/create', async (req, res) => {
     // Generate meeting URL (in production, this would be a real meeting service URL)
     const meetingId = new Date().getTime().toString(36) + Math.random().toString(36).substr(2);
     const meetingUrl = `https://meet.example.com/room/${meetingId}`;
+
+    console.log('Creating meeting with data:', {
+      meetingId,
+      title,
+      roomId,
+      organizer,
+      participants: participants?.length || 0,
+      scheduledTime: new Date(scheduledTime)
+    });
 
     const meeting = new Meeting({
       meetingId,
@@ -53,25 +65,26 @@ router.post('/create', async (req, res) => {
       status: 'scheduled'
     });
 
-    await meeting.save();
+    const savedMeeting = await meeting.save();
+    console.log('Meeting saved successfully:', savedMeeting._id);
 
     res.status(201).json({
       success: true,
       message: 'Meeting created successfully',
       meeting: {
-        id: meeting._id,
-        meetingId: meeting.meetingId,
-        title: meeting.title,
-        description: meeting.description,
-        roomId: meeting.roomId,
-        organizer: meeting.organizer,
-        participants: meeting.participants,
-        scheduledTime: meeting.scheduledTime,
-        duration: meeting.duration,
-        meetingUrl: meeting.meetingUrl,
-        settings: meeting.settings,
-        status: meeting.status,
-        createdAt: meeting.createdAt
+        id: savedMeeting._id,
+        meetingId: savedMeeting.meetingId,
+        title: savedMeeting.title,
+        description: savedMeeting.description,
+        roomId: savedMeeting.roomId,
+        organizer: savedMeeting.organizer,
+        participants: savedMeeting.participants,
+        scheduledTime: savedMeeting.scheduledTime,
+        duration: savedMeeting.duration,
+        meetingUrl: savedMeeting.meetingUrl,
+        settings: savedMeeting.settings,
+        status: savedMeeting.status,
+        createdAt: savedMeeting.createdAt
       }
     });
   } catch (error) {
@@ -90,6 +103,8 @@ router.get('/room/:roomId', async (req, res) => {
     const { roomId } = req.params;
     const { status } = req.query;
 
+    console.log('Fetching meetings for room:', roomId, 'with status filter:', status);
+
     let query = { roomId };
     if (status) {
       query.status = status;
@@ -99,10 +114,10 @@ router.get('/room/:roomId', async (req, res) => {
       .sort({ scheduledTime: 1 })
       .select('-__v');
 
-    res.json({
-      success: true,
-      meetings
-    });
+    console.log('Found meetings:', meetings.length);
+
+    // Return meetings directly as array (not wrapped in success object)
+    res.json(meetings);
   } catch (error) {
     console.error('Error fetching meetings:', error);
     res.status(500).json({
@@ -240,22 +255,28 @@ router.get('/user/:organizer/upcoming', async (req, res) => {
   }
 });
 
-// Get meetings for a specific room
-router.get('/room/:roomId', async (req, res) => {
+
+// Debug endpoint to list all meetings
+router.get('/debug/all', async (req, res) => {
   try {
-    const { roomId } = req.params;
-    
-    console.log('Fetching meetings for room:', roomId);
-    
-    const meetings = await Meeting.find({ roomId })
-      .sort({ scheduledTime: 1 })
-      .limit(50);
-    
-    console.log('Found meetings:', meetings.length);
-    
-    res.json(meetings);
+    const meetings = await Meeting.find({}).sort({ createdAt: -1 });
+    console.log('All meetings in database:', meetings.length);
+    res.json({
+      success: true,
+      count: meetings.length,
+      meetings: meetings.map(m => ({
+        id: m._id,
+        meetingId: m.meetingId,
+        title: m.title,
+        roomId: m.roomId,
+        organizer: m.organizer,
+        scheduledTime: m.scheduledTime,
+        status: m.status,
+        createdAt: m.createdAt
+      }))
+    });
   } catch (error) {
-    console.error('Error fetching room meetings:', error);
+    console.error('Error fetching all meetings:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching meetings',
