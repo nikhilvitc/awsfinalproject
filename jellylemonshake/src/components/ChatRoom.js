@@ -15,19 +15,30 @@ function ChatRoom() {
   const navigate = useNavigate();
   const { user: authUser, isAuthenticated } = useAuth();
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (with delay to allow auth state to load)
   useEffect(() => {
     console.log('ChatRoom: Authentication check - isAuthenticated:', isAuthenticated, 'authUser:', authUser);
-    if (!isAuthenticated) {
-      console.log('ChatRoom: User not authenticated, redirecting to login');
-      navigate('/login');
-      return;
-    }
+    
+    // Add a small delay to allow authentication state to load on refresh
+    const authCheckTimeout = setTimeout(() => {
+      if (!isAuthenticated) {
+        console.log('ChatRoom: User not authenticated, redirecting to login');
+        navigate('/login');
+        return;
+      }
+    }, 1000); // 1 second delay
+
+    return () => clearTimeout(authCheckTimeout);
   }, [isAuthenticated, navigate]);
 
-  // Don't render anything if not authenticated
+  // Show loading while authentication is being checked
   if (!isAuthenticated) {
-    return null;
+    return (
+      <div className="loading">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
   }
 
   // Helper function to get user identifier consistently
@@ -904,10 +915,16 @@ function ChatRoom() {
   // Initialize room data from localStorage
   useEffect(() => {
     const initializeRoom = async () => {
-      // Check if user is authenticated first
+      // Check if user is authenticated first (with retry logic)
       if (!isAuthenticated || !authUser) {
-        console.log('User not authenticated, redirecting to home');
-        navigate("/");
+        console.log('User not authenticated, waiting for auth state...');
+        // Wait a bit for auth state to load, then retry
+        setTimeout(() => {
+          if (!isAuthenticated || !authUser) {
+            console.log('User still not authenticated after retry, redirecting to home');
+            navigate("/");
+          }
+        }, 2000);
         return;
       }
 

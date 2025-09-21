@@ -22,13 +22,26 @@ function MeetingRoom() {
   const loadMeeting = async () => {
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'https://awsfinalproject-backend.onrender.com';
+      console.log('Loading meeting with ID:', meetingId);
+      console.log('API URL:', apiUrl);
+      
       const response = await fetch(`${apiUrl}/api/meetings/${meetingId}`);
+      console.log('Meeting fetch response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        setMeeting(data);
-        setParticipants(data.participants || []);
+        console.log('Meeting fetch response data:', data);
+        
+        if (data.success && data.meeting) {
+          console.log('Meeting loaded successfully:', data.meeting);
+          setMeeting(data.meeting);
+          setParticipants(data.meeting.participants || []);
+        } else {
+          console.error('Meeting data format error:', data);
+          setError('Meeting not found or access denied');
+        }
       } else {
+        console.error('Meeting fetch failed with status:', response.status);
         setError('Meeting not found or access denied');
       }
     } catch (err) {

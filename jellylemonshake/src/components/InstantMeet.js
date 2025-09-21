@@ -52,8 +52,10 @@ function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
       const data = await response.json();
 
       if (data.success) {
+        console.log('Meeting created successfully:', data.meeting);
+        
         // Immediately set meeting status to active since it's an instant meeting
-        await fetch(`${apiUrl}/api/meetings/${data.meeting.meetingId}/status`, {
+        const statusResponse = await fetch(`${apiUrl}/api/meetings/${data.meeting.meetingId}/status`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json'
@@ -62,13 +64,21 @@ function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
             status: 'active'
           })
         });
+        
+        if (statusResponse.ok) {
+          console.log('Meeting status updated to active');
+        } else {
+          console.warn('Failed to update meeting status, but continuing...');
+        }
 
         onMeetingStarted(data.meeting);
         onClose();
         
         // Redirect to meeting in the same tab
+        console.log('Redirecting to meeting:', `/meet/${data.meeting.meetingId}`);
         window.location.href = `/meet/${data.meeting.meetingId}`;
       } else {
+        console.error('Meeting creation failed:', data);
         setError(data.error || 'Failed to start instant meeting');
       }
     } catch (err) {
