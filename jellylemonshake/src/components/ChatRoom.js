@@ -122,7 +122,6 @@ function ChatRoom() {
   const [runLanguage, setRunLanguage] = useState("javascript");
   const [runOutput, setRunOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
-  const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
   const [showCollaborativeEditor, setShowCollaborativeEditor] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
   
@@ -2770,39 +2769,7 @@ function ChatRoom() {
         </div>
       )}
 
-      {showMeetingScheduler && (
-        <div className="meeting-scheduler-overlay">
-          <div className="meeting-scheduler-modal">
-            <MeetingScheduler
-              roomId={roomId}
-              participants={participants}
-              onClose={() => setShowMeetingScheduler(false)}
-              onMeetingCreated={(meeting) => {
-                console.log('Meeting created:', meeting);
-                setShowMeetingScheduler(false);
-                // You can add logic here to notify participants about the new meeting
-              }}
-            />
-          </div>
-        </div>
-      )}
 
-      {showInstantMeet && (
-        <div className="instant-meet-overlay">
-          <div className="instant-meet-modal">
-            <InstantMeet
-              roomId={roomId}
-              participants={participants}
-              onClose={() => setShowInstantMeet(false)}
-              onMeetingStarted={(meetingData) => {
-                console.log('Instant meeting started:', meetingData);
-                setShowInstantMeet(false);
-                // You can add logic here to handle the started meeting
-              }}
-            />
-          </div>
-        </div>
-      )}
 
       {showCollaborativeEditor && (
         <CollaborativeEditor
