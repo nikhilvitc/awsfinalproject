@@ -5,6 +5,7 @@ import MeetingScheduler from "./MeetingScheduler";
 import InstantMeet from "./InstantMeet";
 import AdminPanel from "./AdminPanel";
 import MeetingsList from "./MeetingsList";
+import CollaborativeEditor from "./CollaborativeEditor";
 import { useAuth } from "./AuthContext";
 import socketService from "../services/socketService";
 import "../styles/components/ChatRoom.css";
@@ -124,6 +125,7 @@ function ChatRoom() {
   const [isRunning, setIsRunning] = useState(false);
   const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
   const [showInstantMeet, setShowInstantMeet] = useState(false);
+  const [showCollaborativeEditor, setShowCollaborativeEditor] = useState(false);
   
   // Socket.IO states
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -1953,6 +1955,13 @@ function ChatRoom() {
             </svg>
             Schedule
           </button>
+          <button onClick={() => setShowCollaborativeEditor(true)} className="action-btn info">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="16,18 22,12 16,6"></polyline>
+              <polyline points="8,6 2,12 8,18"></polyline>
+            </svg>
+            🚀 Code Together
+          </button>
           <button onClick={() => setShowMeetingsList(true)} className="action-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -2796,6 +2805,13 @@ function ChatRoom() {
             />
           </div>
         </div>
+      )}
+
+      {showCollaborativeEditor && (
+        <CollaborativeEditor
+          roomId={roomId}
+          onClose={() => setShowCollaborativeEditor(false)}
+        />
       )}
 
       {isUserAdmin && (
