@@ -309,6 +309,12 @@ function ChatRoom() {
       setLoading(true);
       setError(null);
       
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.warn('Room loading timeout - forcing loading to false');
+        setLoading(false);
+      }, 10000); // 10 second timeout
+      
       try {
         const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
         console.log('Loading messages for room:', roomId);
@@ -349,6 +355,7 @@ function ChatRoom() {
         }
         setMessages([]);
       } finally {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     };
