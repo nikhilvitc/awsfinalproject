@@ -398,6 +398,39 @@ function getFileType(extension) {
   return typeMap[extension] || 'other';
 }
 
+// Preview endpoint to serve compiled HTML
+router.get('/:projectId/preview', async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    
+    // Get project and files
+    const project = await Project.findOne({ projectId });
+    if (!project) {
+      return res.status(404).send('Project not found');
+    }
+    
+    const files = await ProjectFile.find({ projectId });
+    if (files.length === 0) {
+      return res.status(404).send('No files found in project');
+    }
+    
+    // Compile the project
+    const compilation = await compileProject(project, files);
+    
+    if (!compilation.success) {
+      return res.status(400).send(`Compilation Error: ${compilation.error}`);
+    }
+    
+    // Set content type and send HTML
+    res.setHeader('Content-Type', 'text/html');
+    res.send(compilation.output);
+    
+  } catch (error) {
+    console.error('Error serving preview:', error);
+    res.status(500).send('Error serving preview');
+  }
+});
+
 // Helper function to compile project
 async function compileProject(project, files) {
   try {
@@ -423,7 +456,7 @@ async function compileProject(project, files) {
     // Combine JS files
     const combinedJS = jsFiles.map(f => f.content).join('\n');
 
-    // Create compiled HTML
+    // Create compiled HTML with proper structure
     const compiledHTML = `
 <!DOCTYPE html>
 <html lang="en">
@@ -431,17 +464,43 @@ async function compileProject(project, files) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${project.name}</title>
-    <style>${combinedCSS}</style>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        ${combinedCSS}
+    </style>
 </head>
 <body>
-    ${htmlFile.content}
-    <script>${combinedJS}</script>
+    <div class="container">
+        ${htmlFile.content}
+    </div>
+    <script>
+        // Add error handling for JavaScript
+        try {
+            ${combinedJS}
+        } catch (error) {
+            console.error('JavaScript Error:', error);
+            document.body.innerHTML += '<div style="color: red; padding: 10px; background: #ffe6e6; border: 1px solid red; margin: 10px; border-radius: 4px;">JavaScript Error: ' + error.message + '</div>';
+        }
+    </script>
 </body>
 </html>
     `;
 
     // Generate preview URL (in production, this would be a real URL)
-    const previewUrl = `/preview/${project.projectId}`;
+    const previewUrl = `/api/projects/${project.projectId}/preview`;
 
     return {
       success: true,

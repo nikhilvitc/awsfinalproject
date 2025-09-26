@@ -199,7 +199,9 @@ function CollaborativeEditor({ roomId, onClose }) {
       const data = await response.json();
       if (data.success) {
         setCompilationStatus('success');
-        setPreviewUrl(data.compilation.previewUrl);
+        // Use the full API URL for preview
+        const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+        setPreviewUrl(`${apiUrl}${data.compilation.previewUrl}`);
         setSuccess('Project compiled successfully!');
       } else {
         setCompilationStatus('error');
@@ -448,7 +450,23 @@ function CollaborativeEditor({ roomId, onClose }) {
                   src={previewUrl}
                   className="preview-iframe"
                   title="Project Preview"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  allow="camera; microphone; fullscreen"
                 />
+              </div>
+              <div className="preview-actions">
+                <button 
+                  onClick={() => window.open(previewUrl, '_blank')}
+                  className="btn-secondary"
+                >
+                  🔗 Open in New Tab
+                </button>
+                <button 
+                  onClick={() => setPreviewUrl('')}
+                  className="btn-secondary"
+                >
+                  ❌ Close Preview
+                </button>
               </div>
             </div>
           )}

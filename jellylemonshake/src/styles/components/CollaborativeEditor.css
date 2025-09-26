@@ -579,3 +579,16 @@
     gap: 10px;
   }
 }
+
+/* Preview Actions */
+.preview-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.preview-actions .btn-secondary {
+  padding: 8px 16px;
+  font-size: 14px;
+}
