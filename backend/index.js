@@ -15,7 +15,9 @@ const io = socketIo(server, {
       "https://awsproject-t64b.onrender.com",
       "https://jellylemonshake-frontend.onrender.com",
       "https://awsfinalproject-frontend.onrender.com",
-      "https://awsfinalproject-backend.onrender.com"
+      "https://awsfinalproject-backend.onrender.com",
+      /^https:\/\/.*\.up\.railway\.app$/, // Railway frontend domains
+      /^https:\/\/.*\.railway\.app$/ // Railway domains
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
@@ -36,7 +38,9 @@ app.use(cors({
     "https://awsproject-t64b.onrender.com",
     "https://jellylemonshake-frontend.onrender.com",
     "https://awsfinalproject-frontend.onrender.com",
-    "https://awsfinalproject-backend.onrender.com"
+    "https://awsfinalproject-backend.onrender.com",
+    /^https:\/\/.*\.up\.railway\.app$/, // Railway frontend domains
+    /^https:\/\/.*\.railway\.app$/ // Railway domains
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
@@ -300,6 +304,22 @@ app.get('/health', (req, res) => {
     status: 'OK', 
     message: 'Server is healthy',
     timestamp: new Date().toISOString()
+  });
+});
+
+// Meeting debug endpoint
+app.get('/api/meetings/debug/status', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Meeting API is working',
+    timestamp: new Date().toISOString(),
+    endpoints: [
+      'POST /api/meetings/create',
+      'GET /api/meetings/:meetingId',
+      'GET /api/meetings/room/:roomId',
+      'PATCH /api/meetings/:meetingId/status',
+      'DELETE /api/meetings/:meetingId'
+    ]
   });
 });
 

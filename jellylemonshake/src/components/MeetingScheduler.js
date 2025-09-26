@@ -135,6 +135,13 @@ function MeetingScheduler({ roomId, participants, onClose, onMeetingCreated }) {
       };
 
       const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      
+      // Test API connection first
+      const statusResponse = await fetch(`${apiUrl}/api/meetings/debug/status`);
+      if (!statusResponse.ok) {
+        throw new Error('Meeting API is not responding. Please check your connection.');
+      }
+      
       const response = await fetch(`${apiUrl}/api/meetings/create`, {
         method: 'POST',
         headers: {
@@ -144,6 +151,7 @@ function MeetingScheduler({ roomId, participants, onClose, onMeetingCreated }) {
       });
 
       const data = await response.json();
+      console.log('Meeting creation response:', data);
 
       if (data.success) {
         setSuccess('Meeting scheduled successfully!');
@@ -152,7 +160,7 @@ function MeetingScheduler({ roomId, participants, onClose, onMeetingCreated }) {
           onClose();
         }, 1500);
       } else {
-        setError(data.error || 'Failed to create meeting');
+        setError(data.message || data.error || 'Failed to create meeting');
       }
     } catch (err) {
       setError('Failed to create meeting. Please check your connection and try again.');

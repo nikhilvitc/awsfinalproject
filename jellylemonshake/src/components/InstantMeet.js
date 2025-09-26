@@ -41,6 +41,12 @@ function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
 
       const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
       
+      // Test API connection first
+      const statusResponse = await fetch(`${apiUrl}/api/meetings/debug/status`);
+      if (!statusResponse.ok) {
+        throw new Error('Meeting API is not responding. Please check your connection.');
+      }
+      
       const response = await fetch(`${apiUrl}/api/meetings/create`, {
         method: 'POST',
         headers: {
@@ -50,6 +56,7 @@ function InstantMeet({ roomId, participants, onClose, onMeetingStarted }) {
       });
 
       const data = await response.json();
+      console.log('Instant meeting creation response:', data);
 
       if (data.success) {
         console.log('Meeting created successfully:', data.meeting);

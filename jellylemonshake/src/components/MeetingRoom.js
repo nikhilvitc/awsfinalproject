@@ -25,6 +25,12 @@ function MeetingRoom() {
       console.log('Loading meeting with ID:', meetingId);
       console.log('API URL:', apiUrl);
       
+      // First, test if the meeting API is working
+      const statusResponse = await fetch(`${apiUrl}/api/meetings/debug/status`);
+      if (!statusResponse.ok) {
+        throw new Error('Meeting API is not responding');
+      }
+      
       const response = await fetch(`${apiUrl}/api/meetings/${meetingId}`);
       console.log('Meeting fetch response status:', response.status);
       
@@ -42,10 +48,11 @@ function MeetingRoom() {
         }
       } else {
         console.error('Meeting fetch failed with status:', response.status);
-        setError('Meeting not found or access denied');
+        const errorData = await response.json().catch(() => ({}));
+        setError(`Meeting not found (${response.status}): ${errorData.message || 'Unknown error'}`);
       }
     } catch (err) {
-      setError('Failed to load meeting');
+      setError(`Failed to load meeting: ${err.message}`);
       console.error('Error loading meeting:', err);
     } finally {
       setLoading(false);
