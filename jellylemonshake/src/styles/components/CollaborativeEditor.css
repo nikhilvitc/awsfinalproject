@@ -397,3 +397,185 @@
 .files-list::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+/* Code Paste Modal Styles */
+.code-paste-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.code-paste-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.code-paste-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.code-paste-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.code-paste-content {
+  padding: 30px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.paste-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.form-input, .form-select {
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.form-input:focus, .form-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.code-editor-container {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+.code-highlighter {
+  margin: 0 !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.code-textarea {
+  width: 100%;
+  border: none;
+  padding: 15px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 300px;
+  background: #f8f9fa;
+  outline: none;
+}
+
+.editor-controls {
+  padding: 10px 15px;
+  background: #f1f3f4;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin: 0;
+}
+
+.paste-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Responsive Design for Code Paste Modal */
+@media (max-width: 768px) {
+  .code-paste-modal {
+    margin: 10px;
+    max-width: none;
+  }
+  
+  .code-paste-content {
+    padding: 20px;
+  }
+  
+  .paste-actions {
+    flex-direction: column;
+  }
+  
+  .code-highlighter {
+    font-size: 12px !important;
+  }
+  
+  .code-textarea {
+    font-size: 12px;
+    min-height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .code-paste-header {
+    padding: 15px 20px;
+  }
+  
+  .code-paste-header h3 {
+    font-size: 18px;
+  }
+  
+  .code-paste-content {
+    padding: 15px;
+  }
+  
+  .paste-actions {
+    gap: 10px;
+  }
+}

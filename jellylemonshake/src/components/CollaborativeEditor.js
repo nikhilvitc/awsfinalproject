@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import '../styles/components/CollaborativeEditor.css';
 
 function CollaborativeEditor({ roomId, onClose }) {
@@ -14,6 +16,11 @@ function CollaborativeEditor({ roomId, onClose }) {
   const [success, setSuccess] = useState('');
   const [compilationStatus, setCompilationStatus] = useState('idle');
   const [previewUrl, setPreviewUrl] = useState('');
+  const [showCodePaste, setShowCodePaste] = useState(false);
+  const [pastedCode, setPastedCode] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
+  const [fileName, setFileName] = useState('');
+  const [showSyntaxHighlighting, setShowSyntaxHighlighting] = useState(true);
   
   const fileInputRef = useRef(null);
 
@@ -205,6 +212,96 @@ function CollaborativeEditor({ roomId, onClose }) {
     }
   };
 
+  const handleCodePaste = () => {
+    setShowCodePaste(true);
+    setPastedCode('');
+    setFileName('');
+    setSelectedLanguage('javascript');
+  };
+
+  const savePastedCode = async () => {
+    if (!pastedCode.trim() || !fileName.trim() || !selectedProject) {
+      setError('Please provide code, filename, and select a project');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      
+      // Create a file object for the pasted code
+      const fileData = {
+        projectId: selectedProject.projectId,
+        fileName: fileName,
+        filePath: `/${fileName}`,
+        fileType: selectedLanguage,
+        content: pastedCode,
+        uploadedBy: user?.email || user?.username,
+        lastModifiedBy: user?.email || user?.username,
+        metadata: {
+          size: pastedCode.length,
+          encoding: 'utf8',
+          mimeType: getMimeType(selectedLanguage)
+        }
+      };
+
+      const response = await fetch(`${apiUrl}/api/projects/${selectedProject.projectId}/files/paste`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(fileData)
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setSuccess('Code pasted and saved successfully!');
+        setShowCodePaste(false);
+        setPastedCode('');
+        setFileName('');
+        loadProjectFiles(selectedProject.projectId);
+      } else {
+        setError(data.message || 'Failed to save pasted code');
+      }
+    } catch (err) {
+      setError('Failed to save pasted code');
+      console.error('Error saving pasted code:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMimeType = (language) => {
+    const mimeTypes = {
+      'javascript': 'text/javascript',
+      'css': 'text/css',
+      'html': 'text/html',
+      'json': 'application/json'
+    };
+    return mimeTypes[language] || 'text/plain';
+  };
+
+  const getFileExtension = (language) => {
+    const extensions = {
+      'javascript': '.js',
+      'css': '.css',
+      'html': '.html',
+      'json': '.json'
+    };
+    return extensions[language] || '.txt';
+  };
+
+  const handleLanguageChange = (language) => {
+    setSelectedLanguage(language);
+    if (!fileName || fileName === '') {
+      setFileName(`file${getFileExtension(language)}`);
+    } else if (!fileName.includes('.')) {
+      setFileName(`${fileName}${getFileExtension(language)}`);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="collaborative-editor-overlay" onClick={onClose}>
@@ -278,6 +375,13 @@ function CollaborativeEditor({ roomId, onClose }) {
                     📤 Upload File
                   </button>
                   <button 
+                    onClick={handleCodePaste}
+                    className="btn-secondary"
+                    disabled={loading}
+                  >
+                    📝 Paste Code
+                  </button>
+                  <button 
                     onClick={compileProject}
                     className="btn-primary"
                     disabled={loading || compilationStatus === 'compiling'}
@@ -349,6 +453,103 @@ function CollaborativeEditor({ roomId, onClose }) {
             </div>
           )}
         </div>
+
+        {/* Code Paste Modal */}
+        {showCodePaste && (
+          <div className="code-paste-overlay">
+            <div className="code-paste-modal">
+              <div className="code-paste-header">
+                <h3>📝 Paste Code</h3>
+                <button 
+                  onClick={() => setShowCodePaste(false)}
+                  className="close-btn"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="code-paste-content">
+                <div className="paste-form">
+                  <div className="form-group">
+                    <label>File Name:</label>
+                    <input
+                      type="text"
+                      value={fileName}
+                      onChange={(e) => setFileName(e.target.value)}
+                      placeholder="Enter filename (e.g., script.js)"
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Language:</label>
+                    <select
+                      value={selectedLanguage}
+                      onChange={(e) => handleLanguageChange(e.target.value)}
+                      className="form-select"
+                    >
+                      <option value="javascript">JavaScript</option>
+                      <option value="css">CSS</option>
+                      <option value="html">HTML</option>
+                      <option value="json">JSON</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Code:</label>
+                    <div className="code-editor-container">
+                      {showSyntaxHighlighting ? (
+                        <SyntaxHighlighter
+                          language={selectedLanguage}
+                          style={tomorrow}
+                          className="code-highlighter"
+                          showLineNumbers={true}
+                          wrapLines={true}
+                        >
+                          {pastedCode || '// Paste your code here...'}
+                        </SyntaxHighlighter>
+                      ) : (
+                        <textarea
+                          value={pastedCode}
+                          onChange={(e) => setPastedCode(e.target.value)}
+                          placeholder="Paste your code here..."
+                          className="code-textarea"
+                          rows={15}
+                        />
+                      )}
+                    </div>
+                    <div className="editor-controls">
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={showSyntaxHighlighting}
+                          onChange={(e) => setShowSyntaxHighlighting(e.target.checked)}
+                        />
+                        Syntax Highlighting
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="paste-actions">
+                    <button 
+                      onClick={savePastedCode}
+                      className="btn-primary"
+                      disabled={loading || !pastedCode.trim() || !fileName.trim()}
+                    >
+                      {loading ? '⏳ Saving...' : '💾 Save Code'}
+                    </button>
+                    <button 
+                      onClick={() => setShowCodePaste(false)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

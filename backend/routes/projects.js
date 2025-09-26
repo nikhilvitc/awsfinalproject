@@ -129,6 +129,71 @@ router.get('/:projectId', async (req, res) => {
   }
 });
 
+// Paste code to project
+router.post('/:projectId/files/paste', async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { fileName, filePath, fileType, content, uploadedBy, lastModifiedBy, metadata } = req.body;
+
+    if (!fileName || !content || !uploadedBy) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: fileName, content, uploadedBy'
+      });
+    }
+
+    // Check if project exists and user has permission
+    const project = await Project.findOne({ projectId });
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    const isCollaborator = project.collaborators.some(collab => 
+      collab.userId === uploadedBy || collab.email === uploadedBy
+    );
+
+    if (!isCollaborator) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to add files to this project'
+      });
+    }
+
+    const projectFile = new ProjectFile({
+      projectId,
+      fileName,
+      filePath: filePath || `/${fileName}`,
+      fileType,
+      content,
+      uploadedBy,
+      lastModifiedBy: lastModifiedBy || uploadedBy,
+      metadata: metadata || {
+        size: content.length,
+        encoding: 'utf8',
+        mimeType: getMimeType(fileType)
+      }
+    });
+
+    const savedFile = await projectFile.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Code pasted and saved successfully',
+      file: savedFile
+    });
+  } catch (error) {
+    console.error('Error pasting code:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error pasting code',
+      error: error.message
+    });
+  }
+});
+
 // Upload file to project
 router.post('/:projectId/files/upload', upload.single('file'), async (req, res) => {
   try {
