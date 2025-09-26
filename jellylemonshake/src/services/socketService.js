@@ -186,6 +186,38 @@ class SocketService {
   isConnected() {
     return this.connected && this.socket && this.socket.connected;
   }
+
+  // Generic event listener
+  on(event, callback) {
+    if (this.socket) {
+      this.socket.on(event, callback);
+    } else {
+      console.warn('Socket not available, cannot listen to event:', event);
+    }
+  }
+
+  // Generic event emitter
+  emit(event, data) {
+    if (this.socket && this.socket.connected) {
+      try {
+        this.socket.emit(event, data);
+        return true;
+      } catch (error) {
+        console.error('Failed to emit event:', event, error);
+        return false;
+      }
+    } else {
+      console.warn('Socket not connected, cannot emit event:', event);
+      return false;
+    }
+  }
+
+  // Remove specific event listener
+  off(event, callback) {
+    if (this.socket) {
+      this.socket.off(event, callback);
+    }
+  }
 }
 
 // Create singleton instance

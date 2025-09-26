@@ -20,6 +20,13 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // Check if socket service is available before initializing
+      if (!socketService || typeof socketService.on !== 'function') {
+        console.error('Socket service not available');
+        setError('Socket service not available. Please refresh the page.');
+        return;
+      }
+      
       initializeVideoCall();
       setupSignaling();
     }
@@ -31,13 +38,21 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   }, [isAuthenticated]);
 
   const setupSignaling = () => {
-    // Listen for incoming WebRTC offers
-    socketService.on('webrtc-offer', async (data) => {
-      if (data.roomId === roomId && data.from !== user?.id) {
-        console.log('Received WebRTC offer from:', data.from);
-        await handleIncomingOffer(data);
+    try {
+      // Check if socket service is available
+      if (!socketService || typeof socketService.on !== 'function') {
+        console.error('Socket service not available or invalid');
+        setError('Socket service not available. Please refresh the page.');
+        return;
       }
-    });
+
+      // Listen for incoming WebRTC offers
+      socketService.on('webrtc-offer', async (data) => {
+        if (data.roomId === roomId && data.from !== user?.id) {
+          console.log('Received WebRTC offer from:', data.from);
+          await handleIncomingOffer(data);
+        }
+      });
 
     // Listen for incoming WebRTC answers
     socketService.on('webrtc-answer', async (data) => {
@@ -76,14 +91,24 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         setRemoteStreams(prev => prev.filter(s => s.id !== data.userId));
       }
     });
+    } catch (error) {
+      console.error('Error setting up WebRTC signaling:', error);
+      setError('Failed to setup video call signaling. Please refresh the page.');
+    }
   };
 
   const cleanupSignaling = () => {
-    socketService.off('webrtc-offer');
-    socketService.off('webrtc-answer');
-    socketService.off('webrtc-ice-candidate');
-    socketService.off('user-joined-video');
-    socketService.off('user-left-video');
+    try {
+      if (socketService && typeof socketService.off === 'function') {
+        socketService.off('webrtc-offer');
+        socketService.off('webrtc-answer');
+        socketService.off('webrtc-ice-candidate');
+        socketService.off('user-joined-video');
+        socketService.off('user-left-video');
+      }
+    } catch (error) {
+      console.error('Error cleaning up WebRTC signaling:', error);
+    }
   };
 
   // Ensure video stream is set when component mounts
@@ -148,11 +173,15 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     });
 
     // Notify other participants that we joined the video call
-    socketService.emit('user-joined-video', {
-      roomId,
-      userId: user?.id,
-      username: user?.username || user?.email
-    });
+    try {
+      socketService.emit('user-joined-video', {
+        roomId,
+        userId: user?.id,
+        username: user?.username || user?.email
+      });
+    } catch (error) {
+      console.error('Failed to emit user-joined-video:', error);
+    }
   };
 
   const startWebRTCConnection = async (userId, participant = null) => {
@@ -212,12 +241,16 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       await peerConnection.setLocalDescription(offer);
       
       console.log('Sending offer to:', userId);
-      socketService.emit('webrtc-offer', {
-        roomId,
-        to: userId,
-        from: user?.id,
-        offer: offer
-      });
+      try {
+        socketService.emit('webrtc-offer', {
+          roomId,
+          to: userId,
+          from: user?.id,
+          offer: offer
+        });
+      } catch (error) {
+        console.error('Failed to emit WebRTC offer:', error);
+      }
     } catch (error) {
       console.error('Error creating offer:', error);
     }
@@ -267,12 +300,16 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
           console.log('Sending ICE candidate to:', userId);
-          socketService.emit('webrtc-ice-candidate', {
-            roomId,
-            to: userId,
-            from: user?.id,
-            candidate: event.candidate
-          });
+          try {
+            socketService.emit('webrtc-ice-candidate', {
+              roomId,
+              to: userId,
+              from: user?.id,
+              candidate: event.candidate
+            });
+          } catch (error) {
+            console.error('Failed to emit ICE candidate:', error);
+          }
         }
       };
 
@@ -285,12 +322,16 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       await peerConnection.setLocalDescription(answer);
       
       console.log('Sending answer to:', userId);
-      socketService.emit('webrtc-answer', {
-        roomId,
-        to: userId,
-        from: user?.id,
-        answer: answer
-      });
+      try {
+        socketService.emit('webrtc-answer', {
+          roomId,
+          to: userId,
+          from: user?.id,
+          answer: answer
+        });
+      } catch (error) {
+        console.error('Failed to emit WebRTC answer:', error);
+      }
     } catch (error) {
       console.error('Error handling offer:', error);
     }
@@ -386,10 +427,14 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
   const cleanup = () => {
     // Notify other participants that we're leaving
-    socketService.emit('user-left-video', {
-      roomId,
-      userId: user?.id
-    });
+    try {
+      socketService.emit('user-left-video', {
+        roomId,
+        userId: user?.id
+      });
+    } catch (error) {
+      console.error('Failed to emit user-left-video:', error);
+    }
 
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
