@@ -70,8 +70,8 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       
       setConnectionStatus('connected');
       
-      // Simulate remote participants (in real implementation, you'd use WebRTC)
-      simulateRemoteParticipants();
+      // Set up WebRTC connections for real video streams
+      setupWebRTCConnections();
       
     } catch (err) {
       console.error('Error accessing camera/microphone:', err);
@@ -80,17 +80,56 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     }
   };
 
-  const simulateRemoteParticipants = () => {
-    // In a real implementation, this would be handled by WebRTC peer connections
-    // For now, we'll simulate remote participants
-    const mockParticipants = participants.slice(0, 3); // Limit to 3 for demo
+  const setupWebRTCConnections = () => {
+    // Set up WebRTC peer connections for each participant
+    const otherParticipants = participants.filter(p => p.userId !== user?.id);
     
-    setRemoteStreams(mockParticipants.map((participant, index) => ({
-      id: `remote-${index}`,
-      name: participant.username || participant.email || `User ${index + 1}`,
-      isVideoEnabled: true,
-      isAudioEnabled: true
-    })));
+    otherParticipants.forEach((participant, index) => {
+      const peerConnection = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      });
+
+      // Add local stream to peer connection
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => {
+          peerConnection.addTrack(track, localStreamRef.current);
+        });
+      }
+
+      // Handle remote stream
+      peerConnection.ontrack = (event) => {
+        const [remoteStream] = event.streams;
+        console.log('Received remote stream from:', participant.username);
+        
+        setRemoteStreams(prev => {
+          const existing = prev.find(s => s.id === participant.userId);
+          if (existing) {
+            return prev.map(s => s.id === participant.userId ? { ...s, stream: remoteStream } : s);
+          } else {
+            return [...prev, {
+              id: participant.userId,
+              name: participant.username || participant.email || `User ${index + 1}`,
+              stream: remoteStream,
+              isVideoEnabled: true,
+              isAudioEnabled: true
+            }];
+          }
+        });
+      };
+
+      // Handle ICE candidates
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          // In a real implementation, you'd send this to the other participant via signaling server
+          console.log('ICE candidate for', participant.username, event.candidate);
+        }
+      };
+
+      peerConnections.current[participant.userId] = peerConnection;
+    });
   };
 
   const toggleVideo = () => {
@@ -195,7 +234,9 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           Status: {connectionStatus}<br/>
           Local Stream: {localStream ? '✅ Active' : '❌ None'}<br/>
           Video Element: {localVideoRef.current ? '✅ Ready' : '❌ Not ready'}<br/>
-          Stream Tracks: {localStream ? localStream.getVideoTracks().length : 0} video, {localStream ? localStream.getAudioTracks().length : 0} audio
+          Stream Tracks: {localStream ? localStream.getVideoTracks().length : 0} video, {localStream ? localStream.getAudioTracks().length : 0} audio<br/>
+          Remote Participants: {remoteStreams.length}<br/>
+          Remote Streams: {remoteStreams.filter(s => s.stream).length} active
         </div>
 
         <div className="video-call-content">
@@ -245,13 +286,22 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               {remoteStreams.map((participant, index) => (
                 <div key={participant.id} className="video-participant remote-video">
                   <div className="video-container">
-                    {participant.isVideoEnabled ? (
+                    {participant.stream && participant.isVideoEnabled ? (
                       <video
-                        ref={el => remoteVideoRefs.current[index] = el}
+                        ref={el => {
+                          remoteVideoRefs.current[index] = el;
+                          if (el && participant.stream) {
+                            el.srcObject = participant.stream;
+                            el.play();
+                            console.log('Set remote video stream for:', participant.name);
+                          }
+                        }}
                         autoPlay
                         playsInline
                         className="video-element"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onLoadedMetadata={() => console.log('Remote video loaded:', participant.name)}
+                        onError={(e) => console.error('Remote video error:', participant.name, e)}
                       />
                     ) : (
                       <div className="video-placeholder">
@@ -259,12 +309,14 @@ function VideoCall({ roomId, onClose, participants = [] }) {
                           {participant.name.charAt(0).toUpperCase()}
                         </div>
                         <span className="participant-name">{participant.name}</span>
+                        {!participant.stream && <div className="connecting-indicator">Connecting...</div>}
                       </div>
                     )}
                     <div className="video-overlay">
                       <span className="participant-name">{participant.name}</span>
                       {!participant.isVideoEnabled && <span className="video-off">📹</span>}
                       {!participant.isAudioEnabled && <span className="audio-off">🎤</span>}
+                      {participant.stream && <span className="connected-indicator">🟢</span>}
                     </div>
                   </div>
                 </div>
