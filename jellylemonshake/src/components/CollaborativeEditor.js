@@ -570,15 +570,39 @@ function CollaborativeEditor({ roomId, onClose }) {
             <div className="preview-section">
               <h3>👀 Live Preview</h3>
               <div className="preview-container">
-                <iframe
-                  src={previewUrl}
-                  className="preview-iframe"
-                  title="Project Preview"
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-                  allow="camera; microphone; fullscreen"
-                  onLoad={() => console.log('Preview iframe loaded:', previewUrl)}
-                  onError={(e) => console.error('Preview iframe error:', e)}
-                />
+                {previewUrl.startsWith('data:') ? (
+                  <iframe
+                    src={previewUrl}
+                    className="preview-iframe"
+                    title="Project Preview"
+                    onLoad={() => console.log('Data URL iframe loaded:', previewUrl)}
+                    onError={(e) => console.error('Data URL iframe error:', e)}
+                    style={{ 
+                      width: '100%', 
+                      height: '500px', 
+                      border: '1px solid #ddd', 
+                      borderRadius: '6px',
+                      backgroundColor: '#fff'
+                    }}
+                  />
+                ) : (
+                  <iframe
+                    src={previewUrl}
+                    className="preview-iframe"
+                    title="Project Preview"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
+                    allow="camera; microphone; fullscreen"
+                    onLoad={() => console.log('Preview iframe loaded:', previewUrl)}
+                    onError={(e) => console.error('Preview iframe error:', e)}
+                    style={{ 
+                      width: '100%', 
+                      height: '500px', 
+                      border: '1px solid #ddd', 
+                      borderRadius: '6px',
+                      backgroundColor: '#fff'
+                    }}
+                  />
+                )}
               </div>
               <div className="preview-actions">
                 <button 
@@ -598,6 +622,19 @@ function CollaborativeEditor({ roomId, onClose }) {
                   className="btn-secondary"
                 >
                   🔗 Open in New Tab
+                </button>
+                <button 
+                  onClick={() => {
+                    // Create a new window with the HTML content
+                    const newWindow = window.open('', '_blank', 'width=800,height=600');
+                    if (newWindow) {
+                      newWindow.document.write(decodeURIComponent(previewUrl.split(',')[1]));
+                      newWindow.document.close();
+                    }
+                  }}
+                  className="btn-secondary"
+                >
+                  📄 Show HTML
                 </button>
                 <button 
                   onClick={() => setPreviewUrl('')}
