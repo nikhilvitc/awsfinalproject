@@ -27,6 +27,15 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     };
   }, [isAuthenticated]);
 
+  // Ensure video stream is set when component mounts
+  useEffect(() => {
+    if (localStream && localVideoRef.current && !localVideoRef.current.srcObject) {
+      console.log('Setting video stream on mount');
+      localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.play();
+    }
+  }, [localStream]);
+
   const initializeVideoCall = async () => {
     try {
       setConnectionStatus('connecting');
@@ -53,6 +62,10 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
         localVideoRef.current.play();
+        console.log('Local video stream set:', stream);
+        console.log('Video element:', localVideoRef.current);
+      } else {
+        console.error('Local video ref is null');
       }
       
       setConnectionStatus('connected');
@@ -176,6 +189,15 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
         {error && <div className="error-message">{error}</div>}
 
+        {/* Debug Info */}
+        <div className="debug-info" style={{ padding: '10px', background: '#f0f0f0', margin: '10px', borderRadius: '4px', fontSize: '12px' }}>
+          <strong>Video Debug:</strong><br/>
+          Status: {connectionStatus}<br/>
+          Local Stream: {localStream ? '✅ Active' : '❌ None'}<br/>
+          Video Element: {localVideoRef.current ? '✅ Ready' : '❌ Not ready'}<br/>
+          Stream Tracks: {localStream ? localStream.getVideoTracks().length : 0} video, {localStream ? localStream.getAudioTracks().length : 0} audio
+        </div>
+
         <div className="video-call-content">
           {connectionStatus === 'connecting' && (
             <div className="loading-state">
@@ -205,6 +227,10 @@ function VideoCall({ roomId, onClose, participants = [] }) {
                     muted
                     playsInline
                     className="video-element"
+                    onLoadedMetadata={() => console.log('Local video metadata loaded')}
+                    onCanPlay={() => console.log('Local video can play')}
+                    onError={(e) => console.error('Local video error:', e)}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                   <div className="video-overlay">
                     <span className="participant-name">
@@ -270,6 +296,20 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               title={isScreenSharing ? 'Stop sharing' : 'Share screen'}
             >
               {isScreenSharing ? '📺' : '🖥️'}
+            </button>
+            
+            <button
+              onClick={() => {
+                if (localVideoRef.current && localStream) {
+                  localVideoRef.current.srcObject = localStream;
+                  localVideoRef.current.play();
+                  console.log('Manually retrying video stream');
+                }
+              }}
+              className="control-btn"
+              title="Retry video"
+            >
+              🔄
             </button>
             
             <button
