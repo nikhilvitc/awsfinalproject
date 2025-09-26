@@ -359,11 +359,10 @@ function CollaborativeEditor({ roomId, onClose }) {
           <h2>🚀 Collaborative Code Editor</h2>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
-
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
-
+        
         <div className="collaborative-editor-content">
+          {error && <div className="error-message">{error}</div>}
+          {success && <div className="success-message">{success}</div>}
           {/* Project Selection */}
           <div className="project-section">
             <div className="section-header">
@@ -743,6 +742,7 @@ function CollaborativeEditor({ roomId, onClose }) {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
