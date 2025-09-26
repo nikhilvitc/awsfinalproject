@@ -104,15 +104,34 @@ function CollaborativeEditor({ roomId, onClose }) {
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
-    if (!file || !selectedProject) return;
+    if (!file || !selectedProject) {
+      setError('Please select a project and file to upload');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['.js', '.jsx', '.ts', '.tsx', '.css', '.html', '.json', '.md', '.txt'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    if (!allowedTypes.includes(fileExtension)) {
+      setError(`File type ${fileExtension} is not supported. Allowed types: ${allowedTypes.join(', ')}`);
+      return;
+    }
+
+    // Validate file size (max 1MB)
+    if (file.size > 1024 * 1024) {
+      setError('File size must be less than 1MB');
+      return;
+    }
 
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('uploadedBy', user?.email || user?.username);
+      formData.append('lastModifiedBy', user?.email || user?.username);
 
       const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
       const response = await fetch(`${apiUrl}/api/projects/${selectedProject.projectId}/files/upload`, {
@@ -120,15 +139,21 @@ function CollaborativeEditor({ roomId, onClose }) {
         body: formData
       });
 
+      if (!response.ok) {
+        throw new Error(`Upload failed with status: ${response.status}`);
+      }
+
       const data = await response.json();
       if (data.success) {
-        setSuccess('File uploaded successfully!');
+        setSuccess(`File "${file.name}" uploaded successfully!`);
         loadProjectFiles(selectedProject.projectId);
+        // Clear the file input
+        event.target.value = '';
       } else {
         setError(data.message || 'Failed to upload file');
       }
     } catch (err) {
-      setError('Failed to upload file');
+      setError(`Failed to upload file: ${err.message}`);
       console.error('Error uploading file:', err);
     } finally {
       setLoading(false);
@@ -138,6 +163,95 @@ function CollaborativeEditor({ roomId, onClose }) {
   const handleFileSelect = (file) => {
     setSelectedFile(file);
     setFileContent(file.content);
+  };
+
+  const handleFileDelete = async (fileId) => {
+    if (!selectedProject || !fileId) {
+      setError('No file selected for deletion');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete this file?')) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const response = await fetch(`${apiUrl}/api/projects/${selectedProject.projectId}/files/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Delete failed with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setSuccess('File deleted successfully!');
+        loadProjectFiles(selectedProject.projectId);
+        // Clear selection if deleted file was selected
+        if (selectedFile && selectedFile._id === fileId) {
+          setSelectedFile(null);
+          setFileContent('');
+        }
+      } else {
+        setError(data.message || 'Failed to delete file');
+      }
+    } catch (err) {
+      setError(`Failed to delete file: ${err.message}`);
+      console.error('Error deleting file:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileSave = async () => {
+    if (!selectedFile || !selectedProject) {
+      setError('No file selected to save');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+      const response = await fetch(`${apiUrl}/api/projects/${selectedProject.projectId}/files/${selectedFile._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: fileContent,
+          lastModifiedBy: user?.email || user?.username
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Save failed with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setSuccess('File saved successfully!');
+        loadProjectFiles(selectedProject.projectId);
+      } else {
+        setError(data.message || 'Failed to save file');
+      }
+    } catch (err) {
+      setError(`Failed to save file: ${err.message}`);
+      console.error('Error saving file:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFileContentChange = (content) => {
@@ -181,13 +295,17 @@ function CollaborativeEditor({ roomId, onClose }) {
   const compileProject = async () => {
     if (!selectedProject) {
       setError('Please select a project first');
-      console.error('No project selected for compilation');
       return;
     }
 
-    console.log('Starting compilation for project:', selectedProject.projectId);
+    if (files.length === 0) {
+      setError('No files to compile. Please upload some files first.');
+      return;
+    }
+
     setCompilationStatus('compiling');
     setError('');
+    setSuccess('');
 
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
@@ -201,51 +319,42 @@ function CollaborativeEditor({ roomId, onClose }) {
         })
       });
 
-      console.log('API response status:', response.status);
-      
       if (!response.ok) {
-        throw new Error(`API request failed with status: ${response.status}`);
+        throw new Error(`Compilation failed with status: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('Compilation response:', data);
-      
-      if (data.success) {
+
+      if (data.success && data.compilation) {
         setCompilationStatus('success');
         
-        // Try the API preview URL first
-        const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
+        // Try to use the preview URL first
         const fullPreviewUrl = `${apiUrl}${data.compilation.previewUrl}`;
-        console.log('Setting preview URL:', fullPreviewUrl);
         
-        // Test if the preview URL works
+        // Test if the preview URL is accessible
         try {
           const testResponse = await fetch(fullPreviewUrl, { method: 'HEAD' });
           if (testResponse.ok) {
             setPreviewUrl(fullPreviewUrl);
           } else {
-            // Fallback: create a data URL with the compiled HTML
-            console.log('Preview URL not accessible, using data URL fallback');
+            // Fallback to data URL
             const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(data.compilation.output)}`;
             setPreviewUrl(dataUrl);
           }
         } catch (urlError) {
-          // Fallback: create a data URL with the compiled HTML
-          console.log('Preview URL test failed, using data URL fallback:', urlError);
+          // Fallback to data URL if preview URL fails
           const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(data.compilation.output)}`;
           setPreviewUrl(dataUrl);
         }
         
         setSuccess('Project compiled successfully!');
-        console.log('Compilation successful, preview URL set:', previewUrl);
       } else {
         setCompilationStatus('error');
         setError(data.message || 'Compilation failed');
-        console.error('Compilation failed:', data.message);
       }
     } catch (err) {
       setCompilationStatus('error');
-      setError('Failed to compile project');
+      setError(`Failed to compile project: ${err.message}`);
       console.error('Error compiling project:', err);
     }
   };
@@ -512,18 +621,32 @@ function CollaborativeEditor({ roomId, onClose }) {
                     <div 
                       key={file._id}
                       className={`file-item ${selectedFile?._id === file._id ? 'active' : ''}`}
-                      onClick={() => handleFileSelect(file)}
                     >
-                      <div className="file-icon">
-                        {file.fileType === 'javascript' ? '📜' : 
-                         file.fileType === 'css' ? '🎨' : 
-                         file.fileType === 'html' ? '🌐' : '📄'}
-                      </div>
-                      <div className="file-info">
-                        <div className="file-name">{file.fileName}</div>
-                        <div className="file-meta">
-                          {file.fileType} • {file.metadata?.size ? Math.round(file.metadata.size / 1024) + 'KB' : 'Unknown size'}
+                      <div className="file-content" onClick={() => handleFileSelect(file)}>
+                        <div className="file-icon">
+                          {file.fileType === 'javascript' ? '📜' : 
+                           file.fileType === 'css' ? '🎨' : 
+                           file.fileType === 'html' ? '🌐' : '📄'}
                         </div>
+                        <div className="file-info">
+                          <div className="file-name">{file.fileName}</div>
+                          <div className="file-meta">
+                            {file.fileType} • {file.metadata?.size ? Math.round(file.metadata.size / 1024) + 'KB' : 'Unknown size'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="file-actions">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleFileDelete(file._id);
+                          }}
+                          className="delete-btn"
+                          title="Delete file"
+                          disabled={loading}
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -534,7 +657,7 @@ function CollaborativeEditor({ roomId, onClose }) {
                     <div className="editor-header">
                       <span className="file-name">{selectedFile.fileName}</span>
                       <button 
-                        onClick={saveFileContent}
+                        onClick={handleFileSave}
                         className="btn-save"
                         disabled={loading}
                       >
