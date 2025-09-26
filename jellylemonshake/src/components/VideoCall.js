@@ -31,10 +31,20 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     try {
       setConnectionStatus('connecting');
       
-      // Get user media
+      // Get user media with better quality settings
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true
+        video: { 
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+          frameRate: { ideal: 30, max: 60 },
+          facingMode: 'user'
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 44100
+        }
       });
       
       localStreamRef.current = stream;
@@ -42,6 +52,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
+        localVideoRef.current.play();
       }
       
       setConnectionStatus('connected');
@@ -51,7 +62,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       
     } catch (err) {
       console.error('Error accessing camera/microphone:', err);
-      setError('Unable to access camera/microphone. Please check permissions.');
+      setError('Unable to access camera/microphone. Please check permissions and try again.');
       setConnectionStatus('error');
     }
   };
@@ -208,12 +219,22 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               {remoteStreams.map((participant, index) => (
                 <div key={participant.id} className="video-participant remote-video">
                   <div className="video-container">
-                    <div className="video-placeholder">
-                      <div className="user-avatar">
-                        {participant.name.charAt(0).toUpperCase()}
+                    {participant.isVideoEnabled ? (
+                      <video
+                        ref={el => remoteVideoRefs.current[index] = el}
+                        autoPlay
+                        playsInline
+                        className="video-element"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div className="video-placeholder">
+                        <div className="user-avatar">
+                          {participant.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="participant-name">{participant.name}</span>
                       </div>
-                      <span className="participant-name">{participant.name}</span>
-                    </div>
+                    )}
                     <div className="video-overlay">
                       <span className="participant-name">{participant.name}</span>
                       {!participant.isVideoEnabled && <span className="video-off">📹</span>}
