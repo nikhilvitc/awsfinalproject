@@ -226,9 +226,11 @@ function CollaborativeEditor({ roomId, onClose }) {
         }
         
         setSuccess('Project compiled successfully!');
+        console.log('Compilation successful, preview URL set:', previewUrl);
       } else {
         setCompilationStatus('error');
         setError(data.message || 'Compilation failed');
+        console.error('Compilation failed:', data.message);
       }
     } catch (err) {
       setCompilationStatus('error');
@@ -413,6 +415,40 @@ function CollaborativeEditor({ roomId, onClose }) {
                   >
                     {compilationStatus === 'compiling' ? '⏳ Compiling...' : '🔨 Compile'}
                   </button>
+                  {compilationStatus === 'success' && !previewUrl && (
+                    <button 
+                      onClick={() => {
+                        console.log('Manual preview trigger');
+                        // Create a simple test HTML preview
+                        const testHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Preview</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+    .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #333; }
+    p { color: #666; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎉 Preview is Working!</h1>
+    <p>This is a test preview to verify the display system is working correctly.</p>
+    <p>Your compiled project should appear here once the backend preview endpoint is working.</p>
+  </div>
+</body>
+</html>`;
+                        const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(testHtml)}`;
+                        setPreviewUrl(dataUrl);
+                        console.log('Test preview URL set:', dataUrl);
+                      }}
+                      className="btn-secondary"
+                    >
+                      👀 Test Preview
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -490,6 +526,18 @@ function CollaborativeEditor({ roomId, onClose }) {
                 />
               </div>
               <div className="preview-actions">
+                <button 
+                  onClick={() => {
+                    const iframe = document.querySelector('.preview-iframe');
+                    if (iframe) {
+                      iframe.src = iframe.src; // Force refresh
+                      console.log('Preview iframe refreshed');
+                    }
+                  }}
+                  className="btn-secondary"
+                >
+                  🔄 Refresh Preview
+                </button>
                 <button 
                   onClick={() => window.open(previewUrl, '_blank')}
                   className="btn-secondary"
