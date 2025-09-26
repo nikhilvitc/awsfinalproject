@@ -1,7 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import socketService from '../services/socketService';
 import '../styles/components/VideoCall.css';
+
+// Safe socket service import with fallback
+let socketService = null;
+try {
+  socketService = require('../services/socketService').default;
+} catch (error) {
+  console.error('Failed to import socket service:', error);
+  // Create a fallback socket service
+  socketService = {
+    on: () => console.warn('Socket service not available'),
+    emit: () => console.warn('Socket service not available'),
+    off: () => console.warn('Socket service not available'),
+    connect: () => console.warn('Socket service not available'),
+    disconnect: () => console.warn('Socket service not available'),
+    isConnected: () => false
+  };
+}
 
 function VideoCall({ roomId, onClose, participants = [] }) {
   const { user, isAuthenticated } = useAuth();
@@ -12,6 +28,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   const [remoteStreams, setRemoteStreams] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [error, setError] = useState('');
+  const [componentError, setComponentError] = useState(null);
   
   const localVideoRef = useRef(null);
   const remoteVideoRefs = useRef([]);
@@ -19,21 +36,44 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   const localStreamRef = useRef(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      // Check if socket service is available before initializing
-      if (!socketService || typeof socketService.on !== 'function') {
-        console.error('Socket service not available');
-        setError('Socket service not available. Please refresh the page.');
-        return;
+    try {
+      if (isAuthenticated) {
+        // Initialize socket service first
+        try {
+          if (!socketService) {
+            throw new Error('Socket service not available');
+          }
+          
+          // Try to connect socket service
+          if (typeof socketService.connect === 'function') {
+            socketService.connect();
+          }
+          
+          // Check if socket service methods are available
+          if (typeof socketService.on !== 'function' || typeof socketService.emit !== 'function') {
+            throw new Error('Socket service methods not available');
+          }
+          
+          initializeVideoCall();
+          setupSignaling();
+        } catch (error) {
+          console.error('Socket service initialization failed:', error);
+          setError('Video call service is not available. Please refresh the page or try again later.');
+          setConnectionStatus('error');
+        }
       }
-      
-      initializeVideoCall();
-      setupSignaling();
+    } catch (error) {
+      console.error('VideoCall component error:', error);
+      setComponentError('Video call component failed to initialize. Please refresh the page.');
     }
     
     return () => {
-      cleanup();
-      cleanupSignaling();
+      try {
+        cleanup();
+        cleanupSignaling();
+      } catch (error) {
+        console.error('Error during cleanup:', error);
+      }
     };
   }, [isAuthenticated]);
 
@@ -43,6 +83,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       if (!socketService || typeof socketService.on !== 'function') {
         console.error('Socket service not available or invalid');
         setError('Socket service not available. Please refresh the page.');
+        setConnectionStatus('error');
         return;
       }
 
@@ -455,6 +496,38 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         <div className="video-call-container" onClick={e => e.stopPropagation()}>
           <div className="error-message">
             Please log in to join the video call.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (componentError) {
+    return (
+      <div className="video-call-overlay" onClick={onClose}>
+        <div className="video-call-container" onClick={e => e.stopPropagation()}>
+          <div className="video-call-header">
+            <h2>🎥 Video Call - Room {roomId}</h2>
+            <button className="close-btn" onClick={onClose}>×</button>
+          </div>
+          <div className="error-message">
+            {componentError}
+          </div>
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="btn-primary"
+              style={{ margin: '10px' }}
+            >
+              🔄 Refresh Page
+            </button>
+            <button 
+              onClick={onClose} 
+              className="btn-secondary"
+              style={{ margin: '10px' }}
+            >
+              ❌ Close
+            </button>
           </div>
         </div>
       </div>
