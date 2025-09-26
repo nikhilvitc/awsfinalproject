@@ -197,11 +197,34 @@ function CollaborativeEditor({ roomId, onClose }) {
       });
 
       const data = await response.json();
+      console.log('Compilation response:', data);
+      
       if (data.success) {
         setCompilationStatus('success');
-        // Use the full API URL for preview
+        
+        // Try the API preview URL first
         const apiUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
-        setPreviewUrl(`${apiUrl}${data.compilation.previewUrl}`);
+        const fullPreviewUrl = `${apiUrl}${data.compilation.previewUrl}`;
+        console.log('Setting preview URL:', fullPreviewUrl);
+        
+        // Test if the preview URL works
+        try {
+          const testResponse = await fetch(fullPreviewUrl, { method: 'HEAD' });
+          if (testResponse.ok) {
+            setPreviewUrl(fullPreviewUrl);
+          } else {
+            // Fallback: create a data URL with the compiled HTML
+            console.log('Preview URL not accessible, using data URL fallback');
+            const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(data.compilation.output)}`;
+            setPreviewUrl(dataUrl);
+          }
+        } catch (urlError) {
+          // Fallback: create a data URL with the compiled HTML
+          console.log('Preview URL test failed, using data URL fallback:', urlError);
+          const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(data.compilation.output)}`;
+          setPreviewUrl(dataUrl);
+        }
+        
         setSuccess('Project compiled successfully!');
       } else {
         setCompilationStatus('error');
@@ -441,6 +464,16 @@ function CollaborativeEditor({ roomId, onClose }) {
             </div>
           )}
 
+          {/* Debug Info */}
+          {compilationStatus && (
+            <div className="debug-info" style={{ padding: '10px', background: '#f0f0f0', margin: '10px 0', borderRadius: '4px' }}>
+              <strong>Debug Info:</strong><br/>
+              Status: {compilationStatus}<br/>
+              Preview URL: {previewUrl || 'Not set'}<br/>
+              {compilationStatus === 'success' && previewUrl && '✅ Ready to show preview'}
+            </div>
+          )}
+
           {/* Compilation Status */}
           {compilationStatus === 'success' && previewUrl && (
             <div className="preview-section">
@@ -452,6 +485,8 @@ function CollaborativeEditor({ roomId, onClose }) {
                   title="Project Preview"
                   sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                   allow="camera; microphone; fullscreen"
+                  onLoad={() => console.log('Preview iframe loaded:', previewUrl)}
+                  onError={(e) => console.error('Preview iframe error:', e)}
                 />
               </div>
               <div className="preview-actions">
