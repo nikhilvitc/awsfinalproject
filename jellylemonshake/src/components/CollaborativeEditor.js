@@ -179,8 +179,13 @@ function CollaborativeEditor({ roomId, onClose }) {
   };
 
   const compileProject = async () => {
-    if (!selectedProject) return;
+    if (!selectedProject) {
+      setError('Please select a project first');
+      console.error('No project selected for compilation');
+      return;
+    }
 
+    console.log('Starting compilation for project:', selectedProject.projectId);
     setCompilationStatus('compiling');
     setError('');
 
@@ -196,6 +201,12 @@ function CollaborativeEditor({ roomId, onClose }) {
         })
       });
 
+      console.log('API response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status: ${response.status}`);
+      }
+      
       const data = await response.json();
       console.log('Compilation response:', data);
       
@@ -414,6 +425,50 @@ function CollaborativeEditor({ roomId, onClose }) {
                     disabled={loading || compilationStatus === 'compiling'}
                   >
                     {compilationStatus === 'compiling' ? '⏳ Compiling...' : '🔨 Compile'}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      console.log('Testing compilation without backend');
+                      setCompilationStatus('compiling');
+                      
+                      // Simulate compilation delay
+                      setTimeout(() => {
+                        setCompilationStatus('success');
+                        
+                        // Create a simple test HTML
+                        const testHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Project</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
+    h1 { color: #333; margin-bottom: 20px; }
+    p { color: #666; line-height: 1.6; }
+    .success { color: #28a745; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎉 Compilation Successful!</h1>
+    <p class="success">Your project has been compiled and is ready to view.</p>
+    <p>This is a test compilation to verify the preview system is working correctly.</p>
+    <p>In a real project, your HTML, CSS, and JavaScript code would be compiled and displayed here.</p>
+  </div>
+</body>
+</html>`;
+                        
+                        const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(testHtml)}`;
+                        setPreviewUrl(dataUrl);
+                        setSuccess('Test compilation successful!');
+                        console.log('Test compilation completed with preview URL:', dataUrl);
+                      }, 2000);
+                    }}
+                    className="btn-secondary"
+                    disabled={loading || compilationStatus === 'compiling'}
+                  >
+                    🧪 Test Compile
                   </button>
                   {compilationStatus === 'success' && !previewUrl && (
                     <button 
