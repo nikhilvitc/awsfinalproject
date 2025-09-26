@@ -538,6 +538,8 @@ function CollaborativeEditor({ roomId, onClose }) {
                     onClick={() => {
                       console.log('Testing compilation without backend');
                       setCompilationStatus('compiling');
+                      setError('');
+                      setSuccess('');
                       
                       // Simulate compilation delay
                       setTimeout(() => {
@@ -686,6 +688,22 @@ function CollaborativeEditor({ roomId, onClose }) {
               {compilationStatus === 'success' && previewUrl && '✅ Ready to show preview'}
             </div>
           )}
+
+          {/* Debug Info */}
+          <div className="debug-info">
+            <h4>Debug Info:</h4>
+            <p><strong>Status:</strong> {compilationStatus}</p>
+            <p><strong>Preview URL:</strong> {previewUrl ? 'Set' : 'Not set'}</p>
+            <p><strong>Files Count:</strong> {files.length}</p>
+            <p><strong>Selected Project:</strong> {selectedProject ? selectedProject.name : 'None'}</p>
+            {files.length > 0 && (
+              <div style={{ marginTop: '10px', padding: '10px', background: '#e8f5e8', borderRadius: '4px' }}>
+                <p style={{ margin: 0, color: '#2d5a2d' }}>
+                  ✅ You have {files.length} file(s). Click "🧪 Test Compile" to see a preview!
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Compilation Status */}
           {compilationStatus === 'success' && previewUrl && (
