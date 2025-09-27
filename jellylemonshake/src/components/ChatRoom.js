@@ -232,6 +232,41 @@ function ChatRoom() {
     };
   }, [isSearchOpen, toggleSearch]);
 
+  const scrollToMessage = useCallback((message) => {
+    const messageId = message.id || new Date(message.timestamp).getTime();
+
+    setTimeout(() => {
+      const messageElements =
+        messagesContainerRef.current.querySelectorAll(".message-item");
+      const matchIndex = messages.findIndex(
+        (m) => (m.id || new Date(m.timestamp).getTime()) === messageId
+      );
+
+      if (matchIndex >= 0 && messageElements[matchIndex]) {
+        messageElements[matchIndex].scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }, 100);
+  }, [messages, messagesContainerRef]);
+
+  const navigateSearchResults = useCallback((direction) => {
+    if (searchResults.length <= 1) return;
+
+    let newIndex;
+    if (direction === "next") {
+      newIndex = (currentSearchResultIndex + 1) % searchResults.length;
+    } else {
+      newIndex =
+        (currentSearchResultIndex - 1 + searchResults.length) %
+        searchResults.length;
+    }
+
+    setCurrentSearchResultIndex(newIndex);
+    scrollToMessage(searchResults[newIndex]);
+  }, [searchResults, currentSearchResultIndex, scrollToMessage]);
+
   // Keyboard shortcuts for search
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -282,40 +317,7 @@ function ChatRoom() {
     }
   };
 
-  const navigateSearchResults = (direction) => {
-    if (searchResults.length <= 1) return;
 
-    let newIndex;
-    if (direction === "next") {
-      newIndex = (currentSearchResultIndex + 1) % searchResults.length;
-    } else {
-      newIndex =
-        (currentSearchResultIndex - 1 + searchResults.length) %
-        searchResults.length;
-    }
-
-    setCurrentSearchResultIndex(newIndex);
-    scrollToMessage(searchResults[newIndex]);
-  };
-
-  const scrollToMessage = (message) => {
-    const messageId = message.id || new Date(message.timestamp).getTime();
-
-    setTimeout(() => {
-      const messageElements =
-        messagesContainerRef.current.querySelectorAll(".message-item");
-      const matchIndex = messages.findIndex(
-        (m) => (m.id || new Date(m.timestamp).getTime()) === messageId
-      );
-
-      if (matchIndex >= 0 && messageElements[matchIndex]) {
-        messageElements[matchIndex].scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      }
-    }, 100);
-  };
 
   // Check if room is saved for this user
   useEffect(() => {
