@@ -19,6 +19,12 @@ class SocketService {
     const serverUrl = process.env.REACT_APP_API_URL || 'https://awsproject-backend.onrender.com';
     console.log('Connecting to Socket.IO server:', serverUrl);
     
+    // Add error handling for connection failures
+    if (!serverUrl || serverUrl.includes('localhost:8492')) {
+      console.error('Invalid server URL detected:', serverUrl);
+      return null;
+    }
+    
     this.socket = io(serverUrl, {
       transports: ['polling', 'websocket'], // Try polling first, then websocket
       upgrade: true,
