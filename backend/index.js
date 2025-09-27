@@ -343,6 +343,83 @@ io.on('connection', (socket) => {
       message: `${user.username || user.email} left the room`
     });
   });
+
+  // ===== WEBRTC SIGNALING HANDLERS =====
+  
+  // Handle user joining video call
+  socket.on('user-joined-video', (data) => {
+    console.log('📹 User joined video call:', data);
+    const { roomId, userId, username } = data;
+    
+    // Broadcast to all other users in the room
+    socket.to(roomId).emit('user-joined-video', {
+      roomId,
+      userId,
+      username,
+      email: data.email
+    });
+    
+    console.log(`📹 ${username || userId} joined video call in room ${roomId}`);
+  });
+
+  // Handle user leaving video call
+  socket.on('user-left-video', (data) => {
+    console.log('📹 User left video call:', data);
+    const { roomId, userId } = data;
+    
+    // Broadcast to all other users in the room
+    socket.to(roomId).emit('user-left-video', {
+      roomId,
+      userId
+    });
+    
+    console.log(`📹 User ${userId} left video call in room ${roomId}`);
+  });
+
+  // Handle WebRTC offer
+  socket.on('webrtc-offer', (data) => {
+    console.log('📤 WebRTC offer received:', data);
+    const { roomId, to, from, offer } = data;
+    
+    // Forward offer to specific user
+    socket.to(to).emit('webrtc-offer', {
+      roomId,
+      from,
+      offer
+    });
+    
+    console.log(`📤 WebRTC offer forwarded from ${from} to ${to} in room ${roomId}`);
+  });
+
+  // Handle WebRTC answer
+  socket.on('webrtc-answer', (data) => {
+    console.log('📤 WebRTC answer received:', data);
+    const { roomId, to, from, answer } = data;
+    
+    // Forward answer to specific user
+    socket.to(to).emit('webrtc-answer', {
+      roomId,
+      from,
+      answer
+    });
+    
+    console.log(`📤 WebRTC answer forwarded from ${from} to ${to} in room ${roomId}`);
+  });
+
+  // Handle ICE candidate
+  socket.on('webrtc-ice-candidate', (data) => {
+    console.log('📤 WebRTC ICE candidate received:', data);
+    const { roomId, to, from, candidate } = data;
+    
+    // Forward ICE candidate to specific user
+    socket.to(to).emit('webrtc-ice-candidate', {
+      roomId,
+      from,
+      candidate
+    });
+    
+    console.log(`📤 WebRTC ICE candidate forwarded from ${from} to ${to} in room ${roomId}`);
+  });
 });
 
 app.get('/', (req, res) => {
