@@ -429,9 +429,26 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       // Set a timeout to detect stuck connections
       const timeout = setTimeout(() => {
         console.log('⏰ Connection timeout - checking if still stuck on connecting');
+        console.log('⏰ Current connection status:', connectionStatus);
+        console.log('⏰ Remote streams count:', remoteStreams.length);
+        console.log('⏰ Participants count:', participants.length);
+        console.log('⏰ Socket connected:', safeSocketService.isConnected());
+        
         if (connectionStatus === 'connecting') {
           console.log('⚠️ Connection appears to be stuck, offering retry option');
           setError('Connection appears to be stuck. Please try refreshing or check your network connection.');
+          
+          // Try to recover by re-emitting user-joined-video
+          console.log('🔄 Attempting recovery by re-emitting user-joined-video');
+          try {
+            safeSocketService.emit('user-joined-video', {
+              roomId,
+              userId: user?.id,
+              username: user?.username || user?.email
+            });
+          } catch (error) {
+            console.error('❌ Recovery emit failed:', error);
+          }
         }
       }, 10000); // 10 second timeout
       
@@ -960,8 +977,22 @@ function VideoCall({ roomId, onClose, participants = [] }) {
             </button>
             <button 
               onClick={() => {
-                console.log('🔄 Retrying WebRTC connections...');
-                setupWebRTCConnections();
+                console.log('🔄 Full Recovery - Restarting everything...');
+                // Clear existing connections
+                Object.keys(peerConnections.current).forEach(userId => {
+                  if (peerConnections.current[userId]) {
+                    peerConnections.current[userId].close();
+                    delete peerConnections.current[userId];
+                  }
+                });
+                
+                // Clear remote streams
+                setRemoteStreams([]);
+                
+                // Re-setup everything
+                setTimeout(() => {
+                  setupWebRTCConnections();
+                }, 500);
               }}
               style={{ 
                 padding: '5px 10px', 
@@ -972,7 +1003,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
                 cursor: 'pointer'
               }}
             >
-              🔄 Retry Connection
+              🔄 Full Recovery
             </button>
             <button 
               onClick={() => {
@@ -995,6 +1026,31 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               }}
             >
               🔍 User ID Debug
+            </button>
+            <button 
+              onClick={() => {
+                console.log('🔄 Manual Recovery - Re-emitting user-joined-video');
+                try {
+                  safeSocketService.emit('user-joined-video', {
+                    roomId,
+                    userId: user?.id,
+                    username: user?.username || user?.email
+                  });
+                  console.log('✅ Recovery emit sent');
+                } catch (error) {
+                  console.error('❌ Recovery emit failed:', error);
+                }
+              }}
+              style={{ 
+                padding: '5px 10px', 
+                background: '#f44336', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              🔄 Manual Recovery
             </button>
           </div>
         </div>
