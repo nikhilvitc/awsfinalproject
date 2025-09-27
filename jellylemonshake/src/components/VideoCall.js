@@ -205,25 +205,34 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
       // Listen for incoming WebRTC offers
       safeSocketService.on('webrtc-offer', async (data) => {
+        console.log('📥 WebRTC offer received:', data);
         if (data.roomId === roomId && data.from !== user?.id) {
-          console.log('Received WebRTC offer from:', data.from);
+          console.log('✅ Processing WebRTC offer from:', data.from);
           await handleIncomingOffer(data);
+        } else {
+          console.log('❌ Ignoring offer - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
         }
       });
 
     // Listen for incoming WebRTC answers
     safeSocketService.on('webrtc-answer', async (data) => {
+      console.log('📥 WebRTC answer received:', data);
       if (data.roomId === roomId && data.from !== user?.id) {
-        console.log('Received WebRTC answer from:', data.from);
+        console.log('✅ Processing WebRTC answer from:', data.from);
         await handleIncomingAnswer(data);
+      } else {
+        console.log('❌ Ignoring answer - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
       }
     });
 
     // Listen for ICE candidates
     safeSocketService.on('webrtc-ice-candidate', async (data) => {
+      console.log('📥 ICE candidate received:', data);
       if (data.roomId === roomId && data.from !== user?.id) {
-        console.log('Received ICE candidate from:', data.from);
+        console.log('✅ Processing ICE candidate from:', data.from);
         await handleIncomingIceCandidate(data);
+      } else {
+        console.log('❌ Ignoring ICE candidate - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
       }
     });
 
@@ -406,6 +415,8 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   };
 
   const startWebRTCConnection = async (userId, participant = null) => {
+    console.log('🚀 Starting WebRTC connection with:', userId);
+    
     // Update connection status to 'connecting'
     setRemoteStreams(prev => {
       return prev.map(s => s.id === userId ? { ...s, connectionStatus: 'connecting' } : s);
@@ -418,23 +429,30 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       ]
     });
 
+    console.log('📡 Created peer connection for:', userId);
+
     // Add local stream to peer connection
     if (localStreamRef.current) {
+      console.log('🎥 Adding local stream tracks to peer connection for:', userId);
       localStreamRef.current.getTracks().forEach(track => {
         peerConnection.addTrack(track, localStreamRef.current);
       });
+    } else {
+      console.warn('⚠️ No local stream available for peer connection');
     }
 
     // Handle remote stream
     peerConnection.ontrack = (event) => {
       const [remoteStream] = event.streams;
-      console.log('Received remote stream from:', userId);
+      console.log('🎉 Received remote stream from:', userId, 'Stream:', remoteStream);
       
       setRemoteStreams(prev => {
         const existing = prev.find(s => s.id === userId);
         if (existing) {
+          console.log('✅ Updating existing participant with stream:', userId);
           return prev.map(s => s.id === userId ? { ...s, stream: remoteStream, connectionStatus: 'connected' } : s);
         } else {
+          console.log('✅ Adding new participant with stream:', userId);
           return [...prev, {
             id: userId,
             name: participant?.username || participant?.email || `User ${userId}`,
@@ -450,13 +468,17 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     // Handle ICE candidates
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
-        console.log('Sending ICE candidate to:', userId);
-        socketService.emit('webrtc-ice-candidate', {
-          roomId,
-          to: userId,
-          from: user?.id,
-          candidate: event.candidate
-        });
+        console.log('🧊 Sending ICE candidate to:', userId, 'Candidate:', event.candidate);
+        try {
+          safeSocketService.emit('webrtc-ice-candidate', {
+            roomId,
+            to: userId,
+            from: user?.id,
+            candidate: event.candidate
+          });
+        } catch (error) {
+          console.error('❌ Failed to emit ICE candidate:', error);
+        }
       }
     };
 
@@ -464,27 +486,30 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
     // Create and send offer
     try {
+      console.log('📤 Creating offer for:', userId);
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
       
-      console.log('Sending offer to:', userId);
+      console.log('📤 Sending offer to:', userId, 'Offer:', offer);
       try {
-        safeSocketService.emit('webrtc-offer', {
+        const emitResult = safeSocketService.emit('webrtc-offer', {
           roomId,
           to: userId,
           from: user?.id,
           offer: offer
         });
+        console.log('📤 Offer emit result:', emitResult);
       } catch (error) {
-        console.error('Failed to emit WebRTC offer:', error);
+        console.error('❌ Failed to emit WebRTC offer:', error);
       }
     } catch (error) {
-      console.error('Error creating offer:', error);
+      console.error('❌ Error creating offer:', error);
     }
   };
 
   const handleIncomingOffer = async (data) => {
     const userId = data.from;
+    console.log('📥 Received offer from:', userId, 'Offer:', data.offer);
     let peerConnection = peerConnections.current[userId];
     
     if (!peerConnection) {
