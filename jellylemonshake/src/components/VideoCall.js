@@ -163,6 +163,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   const [error, setError] = useState('');
   const [componentError, setComponentError] = useState(null);
   const [isSettingVideoStream, setIsSettingVideoStream] = useState(false);
+  const [connectionTimeout, setConnectionTimeout] = useState(null);
   
   const localVideoRef = useRef(null);
   const remoteVideoRefs = useRef([]);
@@ -244,6 +245,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       // Listen for incoming WebRTC offers
       safeSocketService.on('webrtc-offer', async (data) => {
         console.log('📥 WebRTC offer received:', data);
+        console.log('📥 Offer details - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
         if (data.roomId === roomId && data.from !== user?.id) {
           console.log('✅ Processing WebRTC offer from:', data.from);
           await handleIncomingOffer(data);
@@ -413,6 +415,17 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       // Set up WebRTC connections for real video streams
       setupWebRTCConnections();
       
+      // Set a timeout to detect stuck connections
+      const timeout = setTimeout(() => {
+        console.log('⏰ Connection timeout - checking if still stuck on connecting');
+        if (connectionStatus === 'connecting') {
+          console.log('⚠️ Connection appears to be stuck, offering retry option');
+          setError('Connection appears to be stuck. Please try refreshing or check your network connection.');
+        }
+      }, 10000); // 10 second timeout
+      
+      setConnectionTimeout(timeout);
+      
     } catch (err) {
       console.error('Error accessing camera/microphone:', err);
       setError('Unable to access camera/microphone. Please check permissions and try again.');
@@ -469,9 +482,13 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
   const startWebRTCConnection = async (userId, participant = null) => {
     console.log('🚀 Starting WebRTC connection with:', userId);
+    console.log('🚀 Participant data:', participant);
+    console.log('🚀 Current user:', user?.id);
+    console.log('🚀 Room ID:', roomId);
     
     // Update connection status to 'connecting'
     setRemoteStreams(prev => {
+      console.log('🔄 Updating connection status to connecting for:', userId);
       return prev.map(s => s.id === userId ? { ...s, connectionStatus: 'connecting' } : s);
     });
 
@@ -541,9 +558,11 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     try {
       console.log('📤 Creating offer for:', userId);
       const offer = await peerConnection.createOffer();
+      console.log('📤 Offer created:', offer);
       await peerConnection.setLocalDescription(offer);
+      console.log('📤 Local description set');
       
-      console.log('📤 Sending offer to:', userId, 'Offer:', offer);
+      console.log('📤 Sending offer to:', userId, 'Offer type:', offer.type, 'SDP length:', offer.sdp?.length);
       try {
         const emitResult = safeSocketService.emit('webrtc-offer', {
           roomId,
@@ -552,6 +571,12 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           offer: offer
         });
         console.log('📤 Offer emit result:', emitResult);
+        console.log('📤 Offer data sent:', {
+          roomId,
+          to: userId,
+          from: user?.id,
+          offerType: offer.type
+        });
       } catch (error) {
         console.error('❌ Failed to emit WebRTC offer:', error);
       }
@@ -905,6 +930,22 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               }}
             >
               🔍 Debug Info
+            </button>
+            <button 
+              onClick={() => {
+                console.log('🔄 Retrying WebRTC connections...');
+                setupWebRTCConnections();
+              }}
+              style={{ 
+                padding: '5px 10px', 
+                background: '#ff9800', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              🔄 Retry Connection
             </button>
           </div>
         </div>
