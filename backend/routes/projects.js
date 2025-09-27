@@ -431,6 +431,55 @@ router.get('/:projectId/preview', async (req, res) => {
   }
 });
 
+// Serve individual project files (CSS, JS, etc.)
+router.get('/:projectId/:filename', async (req, res) => {
+  try {
+    const { projectId, filename } = req.params;
+
+    const project = await Project.findOne({ projectId });
+    if (!project) {
+      return res.status(404).send('Project not found');
+    }
+
+    const file = await ProjectFile.findOne({ 
+      projectId, 
+      fileName: filename 
+    });
+
+    if (!file) {
+      return res.status(404).send('File not found');
+    }
+
+    // Set appropriate content type based on file extension
+    const ext = filename.split('.').pop().toLowerCase();
+    let contentType = 'text/plain';
+    
+    switch (ext) {
+      case 'css':
+        contentType = 'text/css';
+        break;
+      case 'js':
+        contentType = 'application/javascript';
+        break;
+      case 'html':
+        contentType = 'text/html';
+        break;
+      case 'json':
+        contentType = 'application/json';
+        break;
+      default:
+        contentType = 'text/plain';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.send(file.content);
+
+  } catch (error) {
+    console.error('Error serving file:', error);
+    res.status(500).send('Error serving file');
+  }
+});
+
 // Helper function to compile project
 async function compileProject(project, files) {
   try {

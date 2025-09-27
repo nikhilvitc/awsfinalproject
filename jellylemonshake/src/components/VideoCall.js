@@ -297,14 +297,20 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       localStreamRef.current = stream;
       setLocalStream(stream);
       
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-        localVideoRef.current.play();
-        console.log('Local video stream set:', stream);
-        console.log('Video element:', localVideoRef.current);
-      } else {
-        console.error('Local video ref is null');
-      }
+      // Wait for video element to be ready
+      const setVideoStream = () => {
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+          localVideoRef.current.play();
+          console.log('Local video stream set:', stream);
+          console.log('Video element:', localVideoRef.current);
+        } else {
+          console.warn('Video element not ready, retrying in 100ms...');
+          setTimeout(setVideoStream, 100);
+        }
+      };
+      
+      setVideoStream();
       
       setConnectionStatus('connected');
       

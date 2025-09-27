@@ -534,86 +534,6 @@ function CollaborativeEditor({ roomId, onClose }) {
                   >
                     {compilationStatus === 'compiling' ? '⏳ Compiling...' : '🔨 Compile'}
                   </button>
-                  <button 
-                    onClick={() => {
-                      console.log('Testing compilation without backend');
-                      setCompilationStatus('compiling');
-                      setError('');
-                      setSuccess('');
-                      
-                      // Simulate compilation delay
-                      setTimeout(() => {
-                        setCompilationStatus('success');
-                        
-                        // Create a simple test HTML
-                        const testHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Test Project</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; }
-    h1 { color: #333; margin-bottom: 20px; }
-    p { color: #666; line-height: 1.6; }
-    .success { color: #28a745; font-weight: bold; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🎉 Compilation Successful!</h1>
-    <p class="success">Your project has been compiled and is ready to view.</p>
-    <p>This is a test compilation to verify the preview system is working correctly.</p>
-    <p>In a real project, your HTML, CSS, and JavaScript code would be compiled and displayed here.</p>
-  </div>
-</body>
-</html>`;
-                        
-                        const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(testHtml)}`;
-                        setPreviewUrl(dataUrl);
-                        setSuccess('Test compilation successful!');
-                        console.log('Test compilation completed with preview URL:', dataUrl);
-                      }, 2000);
-                    }}
-                    className="btn-secondary"
-                    disabled={loading || compilationStatus === 'compiling'}
-                  >
-                    🧪 Test Compile
-                  </button>
-                  {compilationStatus === 'success' && !previewUrl && (
-                    <button 
-                      onClick={() => {
-                        console.log('Manual preview trigger');
-                        // Create a simple test HTML preview
-                        const testHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Test Preview</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
-    .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    h1 { color: #333; }
-    p { color: #666; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🎉 Preview is Working!</h1>
-    <p>This is a test preview to verify the display system is working correctly.</p>
-    <p>Your compiled project should appear here once the backend preview endpoint is working.</p>
-  </div>
-</body>
-</html>`;
-                        const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(testHtml)}`;
-                        setPreviewUrl(dataUrl);
-                        console.log('Test preview URL set:', dataUrl);
-                      }}
-                      className="btn-secondary"
-                    >
-                      👀 Test Preview
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -679,31 +599,6 @@ function CollaborativeEditor({ roomId, onClose }) {
             </div>
           )}
 
-          {/* Debug Info */}
-          {compilationStatus && (
-            <div className="debug-info" style={{ padding: '10px', background: '#f0f0f0', margin: '10px 0', borderRadius: '4px' }}>
-              <strong>Debug Info:</strong><br/>
-              Status: {compilationStatus}<br/>
-              Preview URL: {previewUrl || 'Not set'}<br/>
-              {compilationStatus === 'success' && previewUrl && '✅ Ready to show preview'}
-            </div>
-          )}
-
-          {/* Debug Info */}
-          <div className="debug-info">
-            <h4>Debug Info:</h4>
-            <p><strong>Status:</strong> {compilationStatus}</p>
-            <p><strong>Preview URL:</strong> {previewUrl ? 'Set' : 'Not set'}</p>
-            <p><strong>Files Count:</strong> {files.length}</p>
-            <p><strong>Selected Project:</strong> {selectedProject ? selectedProject.name : 'None'}</p>
-            {files.length > 0 && (
-              <div style={{ marginTop: '10px', padding: '10px', background: '#e8f5e8', borderRadius: '4px' }}>
-                <p style={{ margin: 0, color: '#2d5a2d' }}>
-                  ✅ You have {files.length} file(s). Click "🧪 Test Compile" to see a preview!
-                </p>
-              </div>
-            )}
-          </div>
 
           {/* Compilation Status */}
           {compilationStatus === 'success' && previewUrl && (
@@ -758,33 +653,6 @@ function CollaborativeEditor({ roomId, onClose }) {
                       }}
                     />
                   )}
-                  
-                  {/* Fallback content display if iframe fails */}
-                  <div className="preview-fallback" style={{ 
-                    display: 'none',
-                    padding: '20px',
-                    background: '#f8f9fa',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '6px',
-                    marginTop: '10px'
-                  }}>
-                    <h4>📄 Preview Content (Fallback)</h4>
-                    <div style={{ 
-                      background: 'white', 
-                      padding: '15px', 
-                      borderRadius: '4px',
-                      border: '1px solid #ddd',
-                      maxHeight: '400px',
-                      overflow: 'auto'
-                    }}>
-                      <pre style={{ margin: 0, fontSize: '12px' }}>
-                        {previewUrl.startsWith('data:') ? 
-                          decodeURIComponent(previewUrl.split(',')[1]) : 
-                          'Preview content not available'
-                        }
-                      </pre>
-                    </div>
-                  </div>
                 </div>
               </div>
               <div className="preview-actions">
@@ -793,22 +661,9 @@ function CollaborativeEditor({ roomId, onClose }) {
                     const iframe = document.querySelector('.preview-iframe');
                     if (iframe) {
                       iframe.src = iframe.src; // Force refresh
-                      console.log('Preview iframe refreshed');
                     }
                   }}
                   className="btn-primary"
-                >
-                  ▶️ Run Preview
-                </button>
-                <button 
-                  onClick={() => {
-                    const iframe = document.querySelector('.preview-iframe');
-                    if (iframe) {
-                      iframe.src = iframe.src; // Force refresh
-                      console.log('Preview iframe refreshed');
-                    }
-                  }}
-                  className="btn-secondary"
                 >
                   🔄 Refresh Preview
                 </button>
@@ -817,30 +672,6 @@ function CollaborativeEditor({ roomId, onClose }) {
                   className="btn-secondary"
                 >
                   🔗 Open in New Tab
-                </button>
-                <button 
-                  onClick={() => {
-                    // Create a new window with the HTML content
-                    const newWindow = window.open('', '_blank', 'width=800,height=600');
-                    if (newWindow) {
-                      newWindow.document.write(decodeURIComponent(previewUrl.split(',')[1]));
-                      newWindow.document.close();
-                    }
-                  }}
-                  className="btn-secondary"
-                >
-                  📄 Show HTML
-                </button>
-                <button 
-                  onClick={() => {
-                    const fallback = document.querySelector('.preview-fallback');
-                    if (fallback) {
-                      fallback.style.display = fallback.style.display === 'none' ? 'block' : 'none';
-                    }
-                  }}
-                  className="btn-secondary"
-                >
-                  🔧 Show Fallback
                 </button>
                 <button 
                   onClick={() => setPreviewUrl('')}
