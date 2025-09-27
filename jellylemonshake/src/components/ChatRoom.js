@@ -230,14 +230,34 @@ function ChatRoom() {
     };
   }, [isSearchOpen, toggleSearch]);
 
+  // Keyboard shortcuts for search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (isSearchOpen && searchResults.length > 0) {
+        if (e.key === 'Enter' && e.shiftKey) {
+          e.preventDefault();
+          navigateSearchResults('prev');
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          navigateSearchResults('next');
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isSearchOpen, searchResults.length, navigateSearchResults]);
+
   const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
 
     if (query.trim()) {
-      const results = messages.filter((message) =>
-        message.text.toLowerCase().includes(query.toLowerCase())
-      );
+      const results = messages.filter((message) => {
+        // Search in message text, username, and email
+        const searchText = `${message.text || ''} ${message.user?.username || ''} ${message.user?.email || ''}`.toLowerCase();
+        return searchText.includes(query.toLowerCase());
+      });
       setSearchResults(results);
 
       // Extract all matching message IDs
@@ -256,6 +276,7 @@ function ChatRoom() {
     } else {
       setSearchResults([]);
       setHighlightedMessageIds([]);
+      setCurrentSearchResultIndex(0);
     }
   };
 
@@ -1945,13 +1966,45 @@ function ChatRoom() {
               type="text"
               placeholder="Search messages..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearch}
               className="search-input"
             />
+            {searchResults.length > 0 && (
+              <div className="search-navigation">
+                <span className="search-results-count">
+                  {currentSearchResultIndex + 1} of {searchResults.length}
+                </span>
+                <button
+                  onClick={() => navigateSearchResults('prev')}
+                  className="search-nav-btn"
+                  disabled={searchResults.length <= 1}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="15,18 9,12 15,6"></polyline>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => navigateSearchResults('next')}
+                  className="search-nav-btn"
+                  disabled={searchResults.length <= 1}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="9,18 15,12 9,6"></polyline>
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         </div>
         
         <div className="header-right">
+          <button onClick={toggleSearch} className="action-btn search-button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            Search
+          </button>
           <button onClick={copyRoomLink} className="action-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
