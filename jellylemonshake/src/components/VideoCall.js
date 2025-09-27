@@ -648,6 +648,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     peerConnection.ontrack = (event) => {
       const [remoteStream] = event.streams;
       console.log('🎉 Received remote stream from:', userId, 'Stream:', remoteStream);
+      console.log('🎉 Stream tracks:', remoteStream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })));
       
       setRemoteStreams(prev => {
         const existing = prev.find(s => s.id === userId);
@@ -668,6 +669,31 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       });
     };
 
+    // Add connection state change monitoring
+    peerConnection.onconnectionstatechange = () => {
+      console.log(`🔗 Connection state changed for ${userId}:`, peerConnection.connectionState);
+      if (peerConnection.connectionState === 'connected') {
+        console.log(`✅ WebRTC connection established with ${userId}`);
+      } else if (peerConnection.connectionState === 'failed') {
+        console.log(`❌ WebRTC connection failed with ${userId}`);
+        setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'failed' } : s));
+      } else if (peerConnection.connectionState === 'disconnected') {
+        console.log(`⚠️ WebRTC connection disconnected with ${userId}`);
+        setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'disconnected' } : s));
+      }
+    };
+
+    // Add ICE connection state monitoring
+    peerConnection.oniceconnectionstatechange = () => {
+      console.log(`🧊 ICE connection state changed for ${userId}:`, peerConnection.iceConnectionState);
+      if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+        console.log(`✅ ICE connection established with ${userId}`);
+      } else if (peerConnection.iceConnectionState === 'failed') {
+        console.log(`❌ ICE connection failed with ${userId}`);
+        setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'ice-failed' } : s));
+      }
+    };
+
     // Handle ICE candidates
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
@@ -686,6 +712,21 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     };
 
     peerConnections.current[userId] = peerConnection;
+
+    // Set up connection timeout
+    const connectionTimeout = setTimeout(() => {
+      if (peerConnection.connectionState !== 'connected' && peerConnection.connectionState !== 'completed') {
+        console.log(`⏰ Connection timeout for ${userId}, current state: ${peerConnection.connectionState}`);
+        setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'timeout' } : s));
+      }
+    }, 10000); // 10 second timeout
+
+    // Clear timeout when connection succeeds
+    const originalOnTrack = peerConnection.ontrack;
+    peerConnection.ontrack = (event) => {
+      clearTimeout(connectionTimeout);
+      if (originalOnTrack) originalOnTrack(event);
+    };
 
     // Create and send offer
     try {
@@ -742,6 +783,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       peerConnection.ontrack = (event) => {
         const [remoteStream] = event.streams;
         console.log('Received remote stream from:', userId);
+        console.log('🎉 Stream tracks:', remoteStream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })));
         
         setRemoteStreams(prev => {
           const existing = prev.find(s => s.id === userId);
@@ -758,6 +800,28 @@ function VideoCall({ roomId, onClose, participants = [] }) {
             }];
           }
         });
+      };
+
+      // Add connection state change monitoring
+      peerConnection.onconnectionstatechange = () => {
+        console.log(`🔗 Connection state changed for ${userId}:`, peerConnection.connectionState);
+        if (peerConnection.connectionState === 'connected') {
+          console.log(`✅ WebRTC connection established with ${userId}`);
+        } else if (peerConnection.connectionState === 'failed') {
+          console.log(`❌ WebRTC connection failed with ${userId}`);
+          setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'failed' } : s));
+        }
+      };
+
+      // Add ICE connection state monitoring
+      peerConnection.oniceconnectionstatechange = () => {
+        console.log(`🧊 ICE connection state changed for ${userId}:`, peerConnection.iceConnectionState);
+        if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+          console.log(`✅ ICE connection established with ${userId}`);
+        } else if (peerConnection.iceConnectionState === 'failed') {
+          console.log(`❌ ICE connection failed with ${userId}`);
+          setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'ice-failed' } : s));
+        }
       };
 
       // Handle ICE candidates
