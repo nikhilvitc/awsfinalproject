@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import MessageItem from "./MessageItem";
 import AdminPanel from "./AdminPanel";
 import MeetingsList from "./MeetingsList";
+import MeetingScheduler from "./MeetingScheduler";
 import CollaborativeEditor from "./CollaborativeEditor";
 import VideoCall from "./VideoCall";
 import { useAuth } from "./AuthContext";
@@ -124,6 +125,7 @@ function ChatRoom() {
   const [isRunning, setIsRunning] = useState(false);
   const [showCollaborativeEditor, setShowCollaborativeEditor] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
+  const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
   
   // Socket.IO states
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -1965,7 +1967,14 @@ function ChatRoom() {
               <line x1="8" y1="2" x2="8" y2="6"></line>
               <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
-            Meetings
+            📅 Meetings
+          </button>
+          <button onClick={() => setShowMeetingScheduler(true)} className="action-btn warning">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12,6 12,12 16,14"></polyline>
+            </svg>
+            ⏰ Schedule
           </button>
           {isUserAdmin && (
             <button onClick={() => setShowAdminPanel(true)} className="action-btn">
@@ -2783,6 +2792,18 @@ function ChatRoom() {
           roomId={roomId}
           participants={participants}
           onClose={() => setShowVideoCall(false)}
+        />
+      )}
+
+      {showMeetingScheduler && (
+        <MeetingScheduler
+          roomId={roomId}
+          participants={participants}
+          onClose={() => setShowMeetingScheduler(false)}
+          onMeetingCreated={(meeting) => {
+            console.log('Meeting created:', meeting);
+            setShowMeetingScheduler(false);
+          }}
         />
       )}
 
