@@ -76,9 +76,9 @@
 .home-content {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
-  border-radius: var(--border-radius-xl);
-  padding: var(--space-2xl);
-  box-shadow: var(--shadow-xl);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--card-shadow);
   border: 1px solid rgba(255, 255, 255, 0.2);
   max-width: 500px;
   width: 100%;
@@ -900,13 +900,104 @@
   display: none !important;
 }
 
+/* My Rooms Section */
+.my-rooms-section {
+  margin-top: var(--spacing-lg);
+}
+
+.rooms-toggle {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.rooms-list {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+  margin-top: var(--spacing-sm);
+}
+
+.rooms-list.expanded {
+  max-height: 300px;
+}
+
+.rooms-list .room-item {
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.rooms-list .room-item:hover {
+  background: var(--gray-100);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: var(--card-shadow);
+}
+
+/* My Rooms View */
+.my-rooms-view {
+  width: 100%;
+}
+
+.my-rooms-view .rooms-list {
+  max-height: none;
+  overflow: visible;
+}
+
+.my-rooms-view .room-item {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  margin-bottom: var(--spacing-md);
+}
+
+.my-rooms-view .room-item:hover {
+  background: var(--gray-50);
+}
+
+/* No Rooms State */
+.no-rooms {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--text-secondary);
+}
+
+.no-rooms p {
+  margin-bottom: var(--spacing-lg);
+  font-size: 1.1rem;
+}
+
+/* Back Button Improvements */
+.back-button {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.back-button:hover {
+  background: var(--gray-100);
+  transform: translateX(-2px);
+}
+
 /* GitHub Profile Link */
 .github-profile-link {
   position: fixed;
   bottom: 20px;
   left: 20px;
   color: rgba(255, 255, 255, 0.7);
-  transition: all var(--transition);
+  transition: all 0.3s ease;
   z-index: 100;
 }
 

@@ -490,20 +490,6 @@ function Home() {
 
   const renderSelectView = () => (
     <div className={`home-header ${view !== "select" ? "hidden" : ""}`}>
-      {/* Top Profile Section */}
-      <div className="profile-section">
-        {user && !user.isGuest && (
-          <div className="user-profile">
-            <div className="user-avatar">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Welcome Section */}
       <div className="welcome-section">
         <h1 className="welcome-title">Welcome to ChatApp</h1>
@@ -514,6 +500,8 @@ function Home() {
           </div>
         )}
       </div>
+
+      {/* Main Action Buttons */}
       <div className="action-buttons">
         <button
           className="btn btn-primary"
@@ -522,7 +510,7 @@ function Home() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14"></path>
           </svg>
-          Create a Room
+          Create Room
         </button>
         <button
           className="btn btn-secondary"
@@ -534,11 +522,15 @@ function Home() {
             <line x1="20" y1="8" x2="20" y2="14"></line>
             <line x1="23" y1="11" x2="17" y2="11"></line>
           </svg>
-          Join a Room
+          Join Room
         </button>
-        {joinedRooms.length > 0 && (
+      </div>
+
+      {/* My Rooms Section */}
+      {joinedRooms.length > 0 && (
+        <div className="my-rooms-section">
           <button
-            className="btn btn-accent"
+            className="btn btn-accent rooms-toggle"
             ref={myRoomsRef}
             onClick={toggleRoomsExpanded}
           >
@@ -559,88 +551,48 @@ function Home() {
               <polyline points="6,9 12,15 18,9"></polyline>
             </svg>
           </button>
-        )}
-        
-        {joinedRooms.length > 0 && (
-          <div
-            className={`rooms-list-container ${roomsExpanded ? "expanded" : ""}`}
-            ref={myRoomsRef}
-          >
-
-            <div
-              className={`rooms-list-container ${
-                roomsExpanded ? "expanded" : ""
-              }`}
-            >
-              {joinedRooms
-                .sort(
-                  (a, b) => new Date(b.lastActivity) - new Date(a.lastActivity)
-                )
-                .map((room) => {
-                  // Get room data including color
-                  const rooms = JSON.parse(
-                    localStorage.getItem("chatRooms") || "{}"
-                  );
-                  const roomData = rooms[room.roomId];
-                  return (
-                    <div
-                      key={room.roomId}
-                      className="home-room-item"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        enterRoom(room.roomId);
-                      }}
-                    >
-                      <div className="home-room-info">
-                        <div className="home-room-name">
-                          Room #{room.roomId}
-                          {room.isPrivate && (
-                            <span className="private-badge mini">P</span>
-                          )}
-                        </div>
-                        <div className="home-room-details">
-                          Last active: {formatLastActivity(room.lastActivity)}
-                        </div>
+          
+          <div className={`rooms-list ${roomsExpanded ? "expanded" : ""}`}>
+            {joinedRooms
+              .sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity))
+              .map((room) => {
+                const rooms = JSON.parse(localStorage.getItem("chatRooms") || "{}");
+                const roomData = rooms[room.roomId];
+                return (
+                  <div
+                    key={room.roomId}
+                    className="room-item"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      enterRoom(room.roomId);
+                    }}
+                  >
+                    <div className="room-info">
+                      <div className="room-name">
+                        Room #{room.roomId}
+                        {room.isPrivate && (
+                          <span className="private-badge">P</span>
+                        )}
                       </div>
-                      <button
-                        className="remove-room"
-                        onClick={(e) => removeRoom(room.roomId, e)}
-                        title="Remove this room"
-                        style={roomData?.color ? { color: roomData.color } : {}}
-                      >
-                        <svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 10 10"
-                          fill="currentColor"
-                        >
-                          <path
-                            d="M1 1L9 9M9 1L1 9"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                          />
-                        </svg>
-                      </button>
+                      <div className="room-details">
+                        Last active: {formatLastActivity(room.lastActivity)}
+                      </div>
                     </div>
-                  );
-                })}
-
-              <div className="join-new-room">
-                <button
-                  className="join-new-room-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setView("join");
-                  }}
-                >
-                  Join Another Room
-                </button>
-              </div>
-            </div>
+                    <button
+                      className="remove-room"
+                      onClick={(e) => removeRoom(room.roomId, e)}
+                      title="Remove room"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+                        <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                );
+              })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 
@@ -650,14 +602,15 @@ function Home() {
         <button 
           onClick={() => setView("select")} 
           className="back-button"
-          style={{ marginBottom: '1rem', background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '1rem' }}
         >
           ← Back
         </button>
-        <h1 className="home-title">Create a New Room</h1>
+        <h1 className="home-title">Create Room</h1>
         <p className="home-subtitle">Set up your own chat room</p>
       </div>
+      
       {error && <div className="error-message">{error}</div>}
+      
       <form onSubmit={handleCreateRoom} className="auth-form">
         <div className="form-group">
           <label htmlFor="username" className="form-label">
@@ -735,14 +688,15 @@ function Home() {
         <button 
           onClick={() => setView("select")} 
           className="back-button"
-          style={{ marginBottom: '1rem', background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '1rem' }}
         >
           ← Back
         </button>
-        <h1 className="home-title">Join a Room</h1>
+        <h1 className="home-title">Join Room</h1>
         <p className="home-subtitle">Enter the room PIN to join</p>
       </div>
+      
       {error && <div className="error-message">{error}</div>}
+      
       <form onSubmit={handleJoinRoom} className="auth-form">
         <div className="form-group">
           <label htmlFor="join-username" className="form-label">
@@ -797,12 +751,20 @@ function Home() {
           />
         </div>
 
-        <div className="input-group">
-          <label htmlFor="roomPassword">Room Password (if required)</label>
+        <div className="form-group">
+          <label htmlFor="roomPassword" className="form-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <circle cx="12" cy="16" r="1"></circle>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            Room Password (if required)
+          </label>
           <input
             type="password"
             id="roomPassword"
             value={roomPassword}
+            className="form-input"
             onChange={(e) => setRoomPassword(e.target.value)}
             placeholder="Enter room password if needed"
           />
@@ -811,12 +773,21 @@ function Home() {
         <div className="button-group">
           <button
             type="button"
-            className="back-button"
+            className="btn btn-secondary"
             onClick={() => setView("select")}
           >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"></path>
+            </svg>
             Back
           </button>
-          <button type="submit" className="join-button">
+          <button type="submit" className="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="4"></circle>
+              <line x1="20" y1="8" x2="20" y2="14"></line>
+              <line x1="23" y1="11" x2="17" y2="11"></line>
+            </svg>
             Join Room
           </button>
         </div>
@@ -825,100 +796,83 @@ function Home() {
   );
 
   const renderMyRoomsView = () => (
-    <div className="form-container rooms-container">
-      <h1>My Rooms</h1>
+    <div className="my-rooms-view">
+      <div className="home-header">
+        <button 
+          onClick={() => setView("select")} 
+          className="back-button"
+        >
+          ← Back
+        </button>
+        <h1 className="home-title">My Rooms</h1>
+        <p className="home-subtitle">Manage your joined rooms</p>
+      </div>
+      
       {joinedRooms.length === 0 ? (
         <div className="no-rooms">
           <p>You haven't joined any rooms yet.</p>
-          <button
-            onClick={() => setView("select")}
-            className="back-button mt-20"
-          >
-            Back
-          </button>
+          <div className="button-group">
+            <button
+              onClick={() => setView("create")}
+              className="btn btn-primary"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+              Create Room
+            </button>
+            <button
+              onClick={() => setView("join")}
+              className="btn btn-secondary"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
+              </svg>
+              Join Room
+            </button>
+          </div>
         </div>
       ) : (
-        <>
-          <div className="rooms-list">
-            {joinedRooms
-              .sort(
-                (a, b) => new Date(b.lastActivity) - new Date(a.lastActivity)
-              )
-              .map((room) => {
-                // Get room data including color
-                const rooms = JSON.parse(
-                  localStorage.getItem("chatRooms") || "{}"
-                );
-                const roomData = rooms[room.roomId];
-                return (
-                  <div
-                    className="option-button my-rooms"
-                    ref={myRoomsRef}
-                    onClick={toggleRoomsExpanded}
-                  >
-                    <div
-                      key={room.roomId}
-                      className="room-item"
-                      onClick={() => enterRoom(room.roomId)}
-                      style={
-                        roomData?.color
-                          ? { borderLeft: `4px solid ${roomData.color}` }
-                          : {}
-                      }
-                    >
-                      <div className="room-info">
-                        <div className="room-id">
-                          {room.name}
-                          {room.isPrivate && (
-                            <span className="private-badge small">Private</span>
-                          )}
-                        </div>
-                        <div className="room-details">
-                          {room.isCreator ? "Created by you" : "Joined"} • Last
-                          activity: {formatLastActivity(room.lastActivity)}
-                        </div>
-                      </div>
-                      <button
-                        className="remove-room"
-                        onClick={(e) => removeRoom(room.roomId, e)}
-                        title="Remove this room"
-                      >
-                        <svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 10 10"
-                          fill="currentColor"
-                        >
-                          <path
-                            d="M1 1L9 9M9 1L1 9"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                          />
-                        </svg>
-                      </button>
+        <div className="rooms-list">
+          {joinedRooms
+            .sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity))
+            .map((room) => {
+              const rooms = JSON.parse(localStorage.getItem("chatRooms") || "{}");
+              const roomData = rooms[room.roomId];
+              return (
+                <div
+                  key={room.roomId}
+                  className="room-item"
+                  onClick={() => enterRoom(room.roomId)}
+                  style={roomData?.color ? { borderLeft: `4px solid ${roomData.color}` } : {}}
+                >
+                  <div className="room-info">
+                    <div className="room-name">
+                      {room.name}
+                      {room.isPrivate && (
+                        <span className="private-badge">P</span>
+                      )}
+                    </div>
+                    <div className="room-details">
+                      {room.isCreator ? "Created by you" : "Joined"} • Last activity: {formatLastActivity(room.lastActivity)}
                     </div>
                   </div>
-                );
-              })}
-          </div>
-          <div className="rooms-actions">
-            <button onClick={() => setView("select")} className="back-button">
-              Back
-            </button>
-            <div className="action-buttons">
-              <button
-                onClick={() => setView("create")}
-                className="create-button"
-              >
-                Create New Room
-              </button>
-              <button onClick={() => setView("join")} className="join-button">
-                Join Another Room
-              </button>
-            </div>
-          </div>
-        </>
+                  <button
+                    className="remove-room"
+                    onClick={(e) => removeRoom(room.roomId, e)}
+                    title="Remove room"
+                  >
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+                      <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              );
+            })}
+        </div>
       )}
     </div>
   );
