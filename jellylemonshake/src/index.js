@@ -15,9 +15,19 @@ window.addEventListener('error', (event) => {
 
 // Handle unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
-  if (event.reason && event.reason.message && event.reason.message.includes('404')) {
-    console.warn('404 promise rejection caught:', event.reason.message);
-    event.preventDefault();
+  console.error('Unhandled promise rejection:', event.reason);
+  // Prevent the default browser behavior
+  event.preventDefault();
+});
+
+// Global error boundary for initialization errors
+window.addEventListener('error', (event) => {
+  if (event.error && event.error.message && event.error.message.includes('Cannot access')) {
+    console.error('Initialization error detected:', event.error);
+    // Try to reload the page after a short delay
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   }
 });
 
