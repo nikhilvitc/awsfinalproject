@@ -356,16 +356,26 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           return prev;
         });
         
-        // Start WebRTC connection with new user (only if we have lower ID)
+        // Start WebRTC connection with new user using robust strategy
         const currentUserId = user?.id || user?.username || user?.email;
         console.log('🚀 Starting WebRTC connection for new participant:', participantId);
         console.log(`🚀 Current user ID: ${currentUserId}, New participant ID: ${participantId}`);
         
-        if (currentUserId < participantId) {
-          console.log(`🚀 Initiating WebRTC connection for new participant (we have lower ID)`);
+        const shouldInitiate = currentUserId < participantId || 
+                              Object.keys(peerConnections.current).length === 0;
+        
+        if (shouldInitiate) {
+          console.log(`🚀 Initiating WebRTC connection for new participant (we should initiate)`);
           startWebRTCConnection(participantId, { userId: data.userId, username: data.username, email: data.email });
         } else {
-          console.log(`🚀 Waiting for new participant to initiate connection (they have lower ID)`);
+          console.log(`🚀 Waiting for new participant to initiate connection (they should initiate)`);
+          // Set a timeout to initiate connection if the other user doesn't start it
+          setTimeout(() => {
+            if (!peerConnections.current[participantId]) {
+              console.log(`🚀 Timeout reached, initiating connection as fallback for new participant`);
+              startWebRTCConnection(participantId, { userId: data.userId, username: data.username, email: data.email });
+            }
+          }, 2000); // 2 second timeout
         }
       } else {
         console.log('❌ Ignoring user-joined-video - roomId:', data.roomId, 'expected:', roomId, 'participantId:', participantId, 'user:', currentUserId);
@@ -558,7 +568,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     });
     
     // Add a small delay to ensure participants are added to state before starting connections
-    // Only initiate connections if we have a lower user ID to avoid conflicts
+    // Use a more robust connection initiation strategy
     setTimeout(() => {
       const currentUserId = user?.id || user?.username || user?.email;
       otherParticipants.forEach((participant, index) => {
@@ -566,13 +576,23 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         console.log(`🚀 Starting WebRTC connection ${index + 1}/${otherParticipants.length} for:`, participantId);
         console.log(`🚀 Current user ID: ${currentUserId}, Participant ID: ${participantId}`);
         
-        // Only initiate connection if our ID is "less than" participant ID (alphabetically)
-        // This prevents both users from trying to create offers simultaneously
-        if (currentUserId < participantId) {
-          console.log(`🚀 Initiating WebRTC connection (we have lower ID)`);
+        // Use a more robust strategy: initiate connection if our ID is lexicographically smaller
+        // or if we're the first to join (no existing connections)
+        const shouldInitiate = currentUserId < participantId || 
+                              Object.keys(peerConnections.current).length === 0;
+        
+        if (shouldInitiate) {
+          console.log(`🚀 Initiating WebRTC connection (we should initiate)`);
           startWebRTCConnection(participantId, participant);
         } else {
-          console.log(`🚀 Waiting for participant to initiate connection (they have lower ID)`);
+          console.log(`🚀 Waiting for participant to initiate connection (they should initiate)`);
+          // Set a timeout to initiate connection if the other user doesn't start it
+          setTimeout(() => {
+            if (!peerConnections.current[participantId]) {
+              console.log(`🚀 Timeout reached, initiating connection as fallback`);
+              startWebRTCConnection(participantId, participant);
+            }
+          }, 2000); // 2 second timeout
         }
       });
     }, 100);
@@ -1153,6 +1173,29 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               }}
             >
               🧪 Test Signaling
+            </button>
+            <button 
+              onClick={() => {
+                console.log('🚀 Manual Connection Trigger - Starting all connections...');
+                const currentUserId = user?.id || user?.username || user?.email;
+                participants.forEach(participant => {
+                  const participantId = participant.userId || participant.username || participant.email;
+                  if (participantId !== currentUserId && !peerConnections.current[participantId]) {
+                    console.log(`🚀 Manually starting connection to: ${participantId}`);
+                    startWebRTCConnection(participantId, participant);
+                  }
+                });
+              }}
+              style={{ 
+                padding: '5px 10px', 
+                background: '#4caf50', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              🚀 Force Connect
             </button>
           </div>
         </div>
