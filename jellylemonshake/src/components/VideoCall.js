@@ -2,14 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import '../styles/components/VideoCall.css';
 
-// Create a completely safe socket service wrapper
-let socketService = null;
-let socketServiceAvailable = false;
-
 // Import socket service directly
 import socketService from '../services/socketService';
 
 // Validate socket service
+let socketServiceAvailable = false;
 if (socketService && typeof socketService.on === 'function' && typeof socketService.emit === 'function') {
   socketServiceAvailable = true;
   console.log('Socket service loaded successfully');
