@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import '../styles/components/VideoCall.css';
 
-// Completely disable socket service to prevent crashes
+// Create a completely safe socket service wrapper
 let socketService = null;
 let socketServiceAvailable = false;
 
-// Try to import socket service, but if it fails, completely disable it
+// Try to import socket service with comprehensive error handling
 try {
   const importedService = require('../services/socketService');
   socketService = importedService.default || importedService;
