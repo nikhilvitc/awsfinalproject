@@ -1,51 +1,61 @@
-/* Video Call Styles */
+/* Google Meet-style Video Call */
 .video-call-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: #202124;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   z-index: 1000;
-  padding: 20px;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
 }
 
 .video-call-container {
-  background: #1a1a1a;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  background: #202124;
   width: 100%;
-  max-width: 1200px;
-  height: 90vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   color: white;
 }
 
-.video-call-header {
+/* Google Meet Header */
+.meet-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 30px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-bottom: 1px solid #333;
+  padding: 16px 24px;
+  background: #2d2d30;
+  border-bottom: 1px solid #3c4043;
+  min-height: 64px;
 }
 
-.video-call-header h2 {
+.meet-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.meet-info h2 {
   margin: 0;
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 500;
+  color: #e8eaed;
 }
 
-.close-btn {
-  background: rgba(255, 255, 255, 0.2);
+.room-info {
+  font-size: 14px;
+  color: #9aa0a6;
+  margin-left: 8px;
+}
+
+.meet-close-btn {
+  background: #5f6368;
   border: none;
   color: white;
-  font-size: 24px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -53,39 +63,52 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.3s ease;
+  transition: background-color 0.2s;
 }
 
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+.meet-close-btn:hover {
+  background: #80868b;
 }
 
-.video-call-content {
-  flex: 1;
+/* Error Messages */
+.meet-error {
   display: flex;
-  flex-direction: column;
-  padding: 20px;
-  gap: 20px;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #fce8e6;
+  color: #d93025;
+  border-bottom: 1px solid #fce8e6;
 }
 
-/* Loading and Error States */
-.loading-state, .error-state {
+.error-icon {
+  font-size: 20px;
+}
+
+.error-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Connecting State */
+.meet-connecting {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   flex: 1;
   text-align: center;
+  padding: 40px;
 }
 
-.loading-spinner {
+.connecting-spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #333;
-  border-top: 4px solid #667eea;
+  border: 3px solid #3c4043;
+  border-top: 3px solid #4285f4;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 @keyframes spin {
@@ -93,283 +116,305 @@
   100% { transform: rotate(360deg); }
 }
 
-.error-state h3 {
-  color: #ff6b6b;
-  margin-bottom: 10px;
+.meet-connecting h3 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 400;
+  color: #e8eaed;
 }
 
-.retry-btn {
-  background: #667eea;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
+.meet-connecting p {
+  margin: 0;
   font-size: 16px;
-  margin-top: 20px;
-  transition: background 0.3s ease;
+  color: #9aa0a6;
 }
 
-.retry-btn:hover {
-  background: #5a67d8;
+/* Main Content */
+.meet-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* Video Grid */
-.video-grid {
+.meet-video-grid {
+  flex: 1;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  flex: 1;
-  min-height: 400px;
-}
-
-.video-participant {
-  background: #2a2a2a;
-  border-radius: 12px;
+  gap: 8px;
+  padding: 8px;
   overflow: hidden;
+}
+
+/* Participants */
+.meet-participant {
   position: relative;
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
+  background: #3c4043;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 16/9;
+  min-height: 200px;
 }
 
-.video-participant:hover {
-  border-color: #667eea;
-}
-
-.local-video {
-  border-color: #4ade80;
-}
-
-.video-container {
+.meet-video-container {
   position: relative;
   width: 100%;
-  height: 250px;
-  background: #1a1a1a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 100%;
+  background: #3c4043;
 }
 
-.video-element {
+.meet-video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #1a1a1a;
+  background: #3c4043;
 }
 
-.video-placeholder {
+.meet-video-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #666;
+  background: #3c4043;
 }
 
-.user-avatar {
+.meet-avatar {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #5f6368;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 32px;
-  font-weight: bold;
+  font-weight: 500;
   color: white;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
-.video-overlay {
+.meet-participant-info {
+  text-align: center;
+}
+
+.meet-participant-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #e8eaed;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.meet-connecting {
+  font-size: 14px;
+  color: #9aa0a6;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Video Overlay */
+.meet-video-overlay {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
-  padding: 15px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  padding: 16px;
+}
+
+.participant-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .participant-name {
-  font-weight: 500;
   font-size: 14px;
-}
-
-.screen-share-indicator,
-.video-off,
-.audio-off {
-  font-size: 16px;
-  margin-left: 8px;
-}
-
-/* Controls */
-.video-controls {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  padding: 20px;
-  background: #2a2a2a;
-  border-radius: 12px;
-}
-
-.control-btn {
-  width: 50px;
-  height: 50px;
-  border: none;
-  border-radius: 50%;
-  background: #4a4a4a;
+  font-weight: 500;
   color: white;
-  font-size: 20px;
+}
+
+.participant-status {
+  display: flex;
+  gap: 8px;
+}
+
+.status-icon {
+  font-size: 16px;
+  opacity: 0.8;
+}
+
+.status-icon.video-off {
+  color: #ea4335;
+}
+
+.status-icon.audio-off {
+  color: #ea4335;
+}
+
+.status-icon.connected {
+  color: #34a853;
+}
+
+/* Google Meet Controls */
+.meet-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #2d2d30;
+  border-top: 1px solid #3c4043;
+  min-height: 80px;
+}
+
+.meet-controls-left,
+.meet-controls-center,
+.meet-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meet-control-btn {
+  background: #5f6368;
+  border: none;
+  color: white;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
+  position: relative;
 }
 
-.control-btn:hover {
-  background: #5a5a5a;
+.meet-control-btn:hover {
+  background: #80868b;
+  transform: scale(1.05);
+}
+
+.meet-control-btn.meet-active {
+  background: #34a853;
+}
+
+.meet-control-btn.meet-active:hover {
+  background: #2e7d32;
+}
+
+.meet-control-btn.meet-inactive {
+  background: #ea4335;
+}
+
+.meet-control-btn.meet-inactive:hover {
+  background: #d33b2c;
+}
+
+.meet-control-btn.meet-end-call {
+  background: #ea4335;
+  width: 56px;
+  height: 56px;
+}
+
+.meet-control-btn.meet-end-call:hover {
+  background: #d33b2c;
   transform: scale(1.1);
 }
 
-.control-btn.active {
-  background: #4ade80;
+.meet-control-btn.meet-secondary {
+  background: #3c4043;
 }
 
-.control-btn.muted {
-  background: #ef4444;
-}
-
-.control-btn.leave-btn {
-  background: #ef4444;
-  width: 60px;
-  height: 60px;
-  font-size: 24px;
-}
-
-.control-btn.leave-btn:hover {
-  background: #dc2626;
-  transform: scale(1.1);
-}
-
-/* Call Info */
-.call-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  background: #2a2a2a;
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-.participants-count {
-  color: #a0a0a0;
-}
-
-.call-status {
-  font-weight: 500;
-}
-
-/* Error Message */
-.error-message {
-  background: #ef4444;
-  color: white;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  font-size: 14px;
+.meet-control-btn.meet-secondary:hover {
+  background: #5f6368;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .video-call-container {
-    height: 95vh;
-    margin: 10px;
-  }
-  
-  .video-grid {
+  .meet-video-grid {
     grid-template-columns: 1fr;
-    gap: 15px;
+    gap: 4px;
+    padding: 4px;
   }
   
-  .video-container {
-    height: 200px;
+  .meet-participant {
+    min-height: 150px;
   }
   
-  .video-controls {
-    gap: 10px;
+  .meet-controls {
+    padding: 12px 16px;
+    min-height: 70px;
   }
   
-  .control-btn {
-    width: 45px;
-    height: 45px;
-    font-size: 18px;
+  .meet-control-btn {
+    width: 44px;
+    height: 44px;
   }
   
-  .control-btn.leave-btn {
-    width: 55px;
-    height: 55px;
-    font-size: 22px;
+  .meet-control-btn.meet-end-call {
+    width: 50px;
+    height: 50px;
   }
 }
 
-@media (max-width: 480px) {
-  .video-call-header {
-    padding: 15px 20px;
-  }
-  
-  .video-call-header h2 {
-    font-size: 18px;
-  }
-  
-  .video-call-content {
-    padding: 15px;
-    gap: 15px;
-  }
-  
-  .video-container {
-    height: 180px;
-  }
-  
-  .user-avatar {
-    width: 60px;
-    height: 60px;
-    font-size: 24px;
-  }
+/* Legacy styles for backward compatibility */
+.video-call-header {
+  display: none;
 }
 
-/* Video Element Styles */
+.video-call-content {
+  display: none;
+}
+
+.video-grid {
+  display: none;
+}
+
+.video-participant {
+  display: none;
+}
+
+.video-container {
+  display: none;
+}
+
 .video-element {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 8px;
-  background: #000;
+  display: none;
 }
 
-.video-element:not([src]) {
-  background: #1a1a1a;
+.video-overlay {
+  display: none;
 }
 
-/* Connection Indicators */
-.connecting-indicator {
-  color: #ffa500;
-  font-size: 12px;
-  margin-top: 5px;
-  animation: pulse 2s infinite;
+.video-controls {
+  display: none;
 }
 
-.connected-indicator {
-  color: #00ff00;
-  font-size: 12px;
-  margin-left: 5px;
+.control-btn {
+  display: none;
 }
 
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+.debug-info {
+  display: none;
+}
+
+.error-message {
+  display: none;
+}
+
+.loading-state {
+  display: none;
+}
+
+.error-state {
+  display: none;
+}
+
+.call-info {
+  display: none;
 }

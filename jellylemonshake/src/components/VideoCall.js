@@ -656,31 +656,46 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   return (
     <div className="video-call-overlay" onClick={onClose}>
       <div className="video-call-container" onClick={e => e.stopPropagation()}>
-        <div className="video-call-header">
-          <h2>🎥 Video Call - Room {roomId}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
-        </div>
-
-        {error && <div className="error-message">{error}</div>}
-
-        {/* Debug Info */}
-        <div className="debug-info" style={{ padding: '10px', background: '#f0f0f0', margin: '10px', borderRadius: '4px', fontSize: '12px' }}>
-          <strong>Video Debug:</strong><br/>
-          Status: {connectionStatus}<br/>
-          Local Stream: {localStream ? '✅ Active' : '❌ None'}<br/>
-          Video Element: {localVideoRef.current ? '✅ Ready' : '❌ Not ready'}<br/>
-          Stream Tracks: {localStream ? localStream.getVideoTracks().length : 0} video, {localStream ? localStream.getAudioTracks().length : 0} audio<br/>
-          Remote Participants: {remoteStreams.length}<br/>
-          Remote Streams: {remoteStreams.filter(s => s.stream).length} active
-        </div>
-
-        <div className="video-call-content">
-          {connectionStatus === 'connecting' && (
-            <div className="loading-state">
-              <div className="loading-spinner"></div>
-              <p>Connecting to video call...</p>
+        {/* Google Meet-style Header */}
+        <div className="meet-header">
+          <div className="meet-header-left">
+            <div className="meet-info">
+              <h2>Video Call</h2>
+              <span className="room-info">Room {roomId}</span>
             </div>
-          )}
+          </div>
+          <div className="meet-header-right">
+            <button className="meet-close-btn" onClick={onClose}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <div className="meet-error">
+            <div className="error-icon">⚠️</div>
+            <div className="error-text">{error}</div>
+          </div>
+        )}
+
+        {componentError && (
+          <div className="meet-error">
+            <div className="error-icon">❌</div>
+            <div className="error-text">{componentError}</div>
+          </div>
+        )}
+
+        {/* Connection Status */}
+        {connectionStatus === 'connecting' && (
+          <div className="meet-connecting">
+            <div className="connecting-spinner"></div>
+            <h3>Connecting to video call...</h3>
+            <p>Please wait while we set up your video call</p>
+          </div>
+        )}
 
           {connectionStatus === 'error' && (
             <div className="error-state">
@@ -692,27 +707,31 @@ function VideoCall({ roomId, onClose, participants = [] }) {
             </div>
           )}
 
-          {connectionStatus === 'connected' && (
-            <div className="video-grid">
-              {/* Local Video */}
-              <div className="video-participant local-video">
-                <div className="video-container">
+        {connectionStatus === 'connected' && (
+          <div className="meet-content">
+            {/* Main Video Grid */}
+            <div className="meet-video-grid">
+              {/* Local Video - Google Meet style */}
+              <div className="meet-participant local-participant">
+                <div className="meet-video-container">
                   <video
                     ref={localVideoRef}
                     autoPlay
                     muted
                     playsInline
-                    className="video-element"
-                    onLoadedMetadata={() => console.log('Local video metadata loaded')}
+                    className="meet-video"
+                    onLoadedMetadata={() => console.log('Local video loaded')}
                     onCanPlay={() => console.log('Local video can play')}
                     onError={(e) => console.error('Local video error:', e)}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
-                  <div className="video-overlay">
-                    <span className="participant-name">
-                      {user?.username || user?.email || 'You'}
-                    </span>
-                    {isScreenSharing && <span className="screen-share-indicator">📺</span>}
+                  <div className="meet-video-overlay">
+                    <div className="participant-info">
+                      <span className="participant-name">You</span>
+                      <div className="participant-status">
+                        {!isVideoEnabled && <span className="status-icon video-off">📹</span>}
+                        {!isAudioEnabled && <span className="status-icon audio-off">🎤</span>}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
