@@ -11,6 +11,14 @@
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  overflow: hidden; /* Prevent background scrolling */
+}
+
+/* Prevent body scrolling when editor is open */
+body.editor-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
 }
 
 .collaborative-editor-container {
@@ -20,9 +28,11 @@
   width: 100%;
   max-width: 1400px;
   height: 90vh;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
 }
 
 .collaborative-editor-content {
@@ -31,8 +41,10 @@
   overflow-x: hidden;
   padding: 20px;
   scroll-behavior: smooth;
-  max-height: calc(90vh - 80px);
+  max-height: calc(90vh - 120px); /* Account for header and padding */
   min-height: 400px;
+  position: relative;
+  z-index: 1;
 }
 
 /* Custom scrollbar for collaborative editor */

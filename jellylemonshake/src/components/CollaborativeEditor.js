@@ -28,6 +28,14 @@ function CollaborativeEditor({ roomId, onClose }) {
     if (roomId) {
       loadProjects();
     }
+    
+    // Prevent background scrolling when editor is open
+    document.body.classList.add('editor-open');
+    
+    return () => {
+      // Re-enable background scrolling when editor is closed
+      document.body.classList.remove('editor-open');
+    };
   }, [roomId]);
 
   const loadProjects = async () => {
