@@ -710,41 +710,96 @@ function CollaborativeEditor({ roomId, onClose }) {
             <div className="preview-section">
               <h3>👀 Live Preview</h3>
               <div className="preview-container">
-                {previewUrl.startsWith('data:') ? (
-                  <iframe
-                    src={previewUrl}
-                    className="preview-iframe"
-                    title="Project Preview"
-                    onLoad={() => console.log('Data URL iframe loaded:', previewUrl)}
-                    onError={(e) => console.error('Data URL iframe error:', e)}
-                    style={{ 
-                      width: '100%', 
-                      height: '500px', 
-                      border: '1px solid #ddd', 
-                      borderRadius: '6px',
-                      backgroundColor: '#fff'
-                    }}
-                  />
-                ) : (
-                  <iframe
-                    src={previewUrl}
-                    className="preview-iframe"
-                    title="Project Preview"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
-                    allow="camera; microphone; fullscreen"
-                    onLoad={() => console.log('Preview iframe loaded:', previewUrl)}
-                    onError={(e) => console.error('Preview iframe error:', e)}
-                    style={{ 
-                      width: '100%', 
-                      height: '500px', 
-                      border: '1px solid #ddd', 
-                      borderRadius: '6px',
-                      backgroundColor: '#fff'
-                    }}
-                  />
-                )}
+                <div className="preview-wrapper">
+                  {previewUrl.startsWith('data:') ? (
+                    <iframe
+                      src={previewUrl}
+                      className="preview-iframe"
+                      title="Project Preview"
+                      onLoad={() => {
+                        console.log('Data URL iframe loaded:', previewUrl);
+                        console.log('Iframe content loaded successfully');
+                      }}
+                      onError={(e) => {
+                        console.error('Data URL iframe error:', e);
+                        console.log('Falling back to direct content display');
+                      }}
+                      style={{ 
+                        width: '100%', 
+                        height: '600px', 
+                        border: '2px solid #007bff', 
+                        borderRadius: '8px',
+                        backgroundColor: '#fff',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                  ) : (
+                    <iframe
+                      src={previewUrl}
+                      className="preview-iframe"
+                      title="Project Preview"
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
+                      allow="camera; microphone; fullscreen"
+                      onLoad={() => {
+                        console.log('Preview iframe loaded:', previewUrl);
+                        console.log('Iframe content loaded successfully');
+                      }}
+                      onError={(e) => {
+                        console.error('Preview iframe error:', e);
+                        console.log('Falling back to direct content display');
+                      }}
+                      style={{ 
+                        width: '100%', 
+                        height: '600px', 
+                        border: '2px solid #007bff', 
+                        borderRadius: '8px',
+                        backgroundColor: '#fff',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                  )}
+                  
+                  {/* Fallback content display if iframe fails */}
+                  <div className="preview-fallback" style={{ 
+                    display: 'none',
+                    padding: '20px',
+                    background: '#f8f9fa',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '6px',
+                    marginTop: '10px'
+                  }}>
+                    <h4>📄 Preview Content (Fallback)</h4>
+                    <div style={{ 
+                      background: 'white', 
+                      padding: '15px', 
+                      borderRadius: '4px',
+                      border: '1px solid #ddd',
+                      maxHeight: '400px',
+                      overflow: 'auto'
+                    }}>
+                      <pre style={{ margin: 0, fontSize: '12px' }}>
+                        {previewUrl.startsWith('data:') ? 
+                          decodeURIComponent(previewUrl.split(',')[1]) : 
+                          'Preview content not available'
+                        }
+                      </pre>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="preview-actions">
+                <button 
+                  onClick={() => {
+                    const iframe = document.querySelector('.preview-iframe');
+                    if (iframe) {
+                      iframe.src = iframe.src; // Force refresh
+                      console.log('Preview iframe refreshed');
+                    }
+                  }}
+                  className="btn-primary"
+                >
+                  ▶️ Run Preview
+                </button>
                 <button 
                   onClick={() => {
                     const iframe = document.querySelector('.preview-iframe');
@@ -775,6 +830,17 @@ function CollaborativeEditor({ roomId, onClose }) {
                   className="btn-secondary"
                 >
                   📄 Show HTML
+                </button>
+                <button 
+                  onClick={() => {
+                    const fallback = document.querySelector('.preview-fallback');
+                    if (fallback) {
+                      fallback.style.display = fallback.style.display === 'none' ? 'block' : 'none';
+                    }
+                  }}
+                  className="btn-secondary"
+                >
+                  🔧 Show Fallback
                 </button>
                 <button 
                   onClick={() => setPreviewUrl('')}
