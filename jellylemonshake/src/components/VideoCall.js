@@ -201,7 +201,9 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   const setupSignaling = () => {
     try {
       // Socket service is guaranteed to be available at this point
-      console.log('Setting up WebRTC signaling');
+      console.log('🔌 Setting up WebRTC signaling');
+      console.log('🔌 Socket service available:', !!safeSocketService);
+      console.log('🔌 Socket connected:', safeSocketService.isConnected());
 
       // Listen for incoming WebRTC offers
       safeSocketService.on('webrtc-offer', async (data) => {
@@ -238,13 +240,15 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
     // Listen for user join/leave events
     safeSocketService.on('user-joined-video', (data) => {
+      console.log('📥 User joined video event received:', data);
       if (data.roomId === roomId && data.userId !== user?.id) {
-        console.log('User joined video call:', data.userId);
+        console.log('✅ Processing user joined video call:', data.userId);
         
         // Add participant to remoteStreams immediately
         setRemoteStreams(prev => {
           const existing = prev.find(s => s.id === data.userId);
           if (!existing) {
+            console.log('➕ Adding new participant from user-joined-video:', data.userId);
             return [...prev, {
               id: data.userId,
               name: data.username || data.email || `User ${data.userId}`,
@@ -254,11 +258,15 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               connectionStatus: 'ready' // Ready to connect
             }];
           }
+          console.log('👤 Participant already exists:', data.userId);
           return prev;
         });
         
         // Start WebRTC connection with new user
-        startWebRTCConnection(data.userId);
+        console.log('🚀 Starting WebRTC connection for new participant:', data.userId);
+        startWebRTCConnection(data.userId, { userId: data.userId, username: data.username, email: data.email });
+      } else {
+        console.log('❌ Ignoring user-joined-video - roomId:', data.roomId, 'expected:', roomId, 'userId:', data.userId, 'user:', user?.id);
       }
     });
 
@@ -377,8 +385,10 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   };
 
   const setupWebRTCConnections = () => {
+    console.log('🔗 Setting up WebRTC connections for participants:', participants);
     // Set up WebRTC peer connections for each participant
     const otherParticipants = participants.filter(p => p.userId !== user?.id);
+    console.log('👥 Other participants:', otherParticipants);
     
     // Add participants to remoteStreams immediately (before WebRTC connection)
     setRemoteStreams(prev => {
@@ -391,6 +401,8 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         connectionStatus: 'ready' // Ready to connect, not actively connecting
       }));
       
+      console.log('➕ Adding participants to remoteStreams:', newParticipants);
+      
       // Merge with existing participants, avoiding duplicates
       const existingIds = prev.map(p => p.id);
       const uniqueNewParticipants = newParticipants.filter(p => !existingIds.includes(p.id));
@@ -398,12 +410,17 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       return [...prev, ...uniqueNewParticipants];
     });
     
-    otherParticipants.forEach((participant, index) => {
-      startWebRTCConnection(participant.userId, participant);
-    });
+    // Add a small delay to ensure participants are added to state before starting connections
+    setTimeout(() => {
+      otherParticipants.forEach((participant, index) => {
+        console.log(`🚀 Starting WebRTC connection ${index + 1}/${otherParticipants.length} for:`, participant.userId);
+        startWebRTCConnection(participant.userId, participant);
+      });
+    }, 100);
 
     // Notify other participants that we joined the video call
     try {
+      console.log('📢 Emitting user-joined-video for room:', roomId, 'user:', user?.id);
       safeSocketService.emit('user-joined-video', {
         roomId,
         userId: user?.id,
