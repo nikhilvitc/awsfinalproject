@@ -31,21 +31,76 @@ const io = socketIo(server, {
   serveClient: false // Don't serve the client files
 });
 
+// Enhanced CORS configuration
 app.use(cors({
-  origin: [
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      "http://localhost:3000",
+      "https://awsproject-frontend.onrender.com",
+      "https://awsproject-t64b.onrender.com",
+      "https://jellylemonshake-frontend.onrender.com",
+      "https://awsfinalproject-frontend.onrender.com",
+      "https://awsfinalproject-backend.onrender.com",
+      /^https:\/\/.*\.up\.railway\.app$/, // Railway frontend domains
+      /^https:\/\/.*\.railway\.app$/ // Railway domains
+    ];
+    
+    // Check if origin is allowed
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return allowedOrigin === origin;
+      } else if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  exposedHeaders: ["Content-Length", "X-Foo", "X-Bar"],
+  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
+}));
+
+// Manual CORS headers as fallback
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
     "http://localhost:3000",
     "https://awsproject-frontend.onrender.com",
     "https://awsproject-t64b.onrender.com",
     "https://jellylemonshake-frontend.onrender.com",
     "https://awsfinalproject-frontend.onrender.com",
-    "https://awsfinalproject-backend.onrender.com",
-    /^https:\/\/.*\.up\.railway\.app$/, // Railway frontend domains
-    /^https:\/\/.*\.railway\.app$/ // Railway domains
-  ],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+    "https://awsfinalproject-backend.onrender.com"
+  ];
+  
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  next();
+});
+
 app.use(express.json());
 
 // MongoDB connection
@@ -305,6 +360,19 @@ app.get('/health', (req, res) => {
     status: 'OK', 
     message: 'Server is healthy',
     timestamp: new Date().toISOString()
+  });
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Backend is running',
+    timestamp: new Date().toISOString(),
+    cors: {
+      origin: req.headers.origin,
+      allowed: true
+    }
   });
 });
 
