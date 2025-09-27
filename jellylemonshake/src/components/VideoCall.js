@@ -279,6 +279,15 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     // Listen for user join/leave events
     safeSocketService.on('user-joined-video', (data) => {
       console.log('📥 User joined video event received:', data);
+      console.log('📥 Event data details:', {
+        roomId: data.roomId,
+        expectedRoomId: roomId,
+        userId: data.userId,
+        currentUserId: user?.id,
+        username: data.username,
+        email: data.email
+      });
+      
       if (data.roomId === roomId && data.userId !== user?.id) {
         console.log('✅ Processing user joined video call:', data.userId);
         
@@ -287,14 +296,16 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           const existing = prev.find(s => s.id === data.userId);
           if (!existing) {
             console.log('➕ Adding new participant from user-joined-video:', data.userId);
-            return [...prev, {
+            const newParticipant = {
               id: data.userId,
               name: data.username || data.email || `User ${data.userId}`,
               stream: null, // Will be set when WebRTC connection is established
               isVideoEnabled: true,
               isAudioEnabled: true,
               connectionStatus: 'ready' // Ready to connect
-            }];
+            };
+            console.log('➕ New participant object:', newParticipant);
+            return [...prev, newParticipant];
           }
           console.log('👤 Participant already exists:', data.userId);
           return prev;
@@ -435,9 +446,22 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
   const setupWebRTCConnections = () => {
     console.log('🔗 Setting up WebRTC connections for participants:', participants);
+    console.log('🔗 Current user ID:', user?.id);
+    console.log('🔗 User object:', user);
+    console.log('🔗 Participants data structure:', participants.map(p => ({
+      userId: p.userId,
+      username: p.username,
+      email: p.email,
+      id: p.id
+    })));
+    
     // Set up WebRTC peer connections for each participant
-    const otherParticipants = participants.filter(p => p.userId !== user?.id);
-    console.log('👥 Other participants:', otherParticipants);
+    const otherParticipants = participants.filter(p => {
+      const isNotCurrentUser = p.userId !== user?.id;
+      console.log(`🔍 Participant ${p.userId} vs current user ${user?.id}: ${isNotCurrentUser ? 'Different' : 'Same'}`);
+      return isNotCurrentUser;
+    });
+    console.log('👥 Other participants after filtering:', otherParticipants);
     
     // Add participants to remoteStreams immediately (before WebRTC connection)
     setRemoteStreams(prev => {
@@ -469,14 +493,17 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
     // Notify other participants that we joined the video call
     try {
-      console.log('📢 Emitting user-joined-video for room:', roomId, 'user:', user?.id);
-      safeSocketService.emit('user-joined-video', {
+      const emitData = {
         roomId,
         userId: user?.id,
         username: user?.username || user?.email
-      });
+      };
+      console.log('📢 Emitting user-joined-video for room:', roomId, 'user:', user?.id);
+      console.log('📢 Emit data:', emitData);
+      const emitResult = safeSocketService.emit('user-joined-video', emitData);
+      console.log('📢 Emit result:', emitResult);
     } catch (error) {
-      console.error('Failed to emit user-joined-video:', error);
+      console.error('❌ Failed to emit user-joined-video:', error);
     }
   };
 
@@ -946,6 +973,28 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               }}
             >
               🔄 Retry Connection
+            </button>
+            <button 
+              onClick={() => {
+                console.log('🔍 User ID Debug Info:');
+                console.log('Current User:', user);
+                console.log('User ID:', user?.id);
+                console.log('Participants:', participants);
+                console.log('Remote Streams:', remoteStreams);
+                console.log('Room ID:', roomId);
+                console.log('Socket Connected:', safeSocketService.isConnected());
+                console.log('Connection Status:', connectionStatus);
+              }}
+              style={{ 
+                padding: '5px 10px', 
+                background: '#9c27b0', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              🔍 User ID Debug
             </button>
           </div>
         </div>
