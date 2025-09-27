@@ -127,6 +127,7 @@ function ChatRoom() {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
   const [videoCallNotification, setVideoCallNotification] = useState(null);
+  const [activeVideoCall, setActiveVideoCall] = useState(false);
   
   // Socket.IO states
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -497,11 +498,22 @@ function ChatRoom() {
     socketService.on('video-call-started', (data) => {
       console.log('📹 Video call notification received:', data);
       if (data.roomId === roomId && data.startedBy !== (user?.username || user?.email)) {
-        setVideoCallNotification({
-          startedBy: data.startedBy,
-          roomId: data.roomId,
-          timestamp: Date.now()
-        });
+        // Only show notification if there's no active video call
+        if (!activeVideoCall) {
+          setVideoCallNotification({
+            startedBy: data.startedBy,
+            roomId: data.roomId,
+            timestamp: Date.now()
+          });
+        }
+      }
+    });
+
+    // Listen for video call status updates
+    socketService.on('video-call-active', (data) => {
+      console.log('📹 Video call active status:', data);
+      if (data.roomId === roomId) {
+        setActiveVideoCall(data.active);
       }
     });
 
@@ -1968,13 +1980,27 @@ function ChatRoom() {
           </button>
     <button 
       onClick={() => {
-        setShowVideoCall(true);
-        // Notify other users that a video call has started
-        socketService.emit('video-call-started', {
-          roomId: roomId,
-          startedBy: user?.username || user?.email,
-          timestamp: Date.now()
-        });
+        if (activeVideoCall) {
+          // If there's already an active video call, just join it
+          setShowVideoCall(true);
+          console.log('📹 Joining existing video call');
+        } else {
+          // Start new video call
+          setShowVideoCall(true);
+          setActiveVideoCall(true);
+          // Notify other users that a video call has started
+          socketService.emit('video-call-started', {
+            roomId: roomId,
+            startedBy: user?.username || user?.email,
+            timestamp: Date.now()
+          });
+          // Notify that video call is now active
+          socketService.emit('video-call-active', {
+            roomId: roomId,
+            active: true
+          });
+          console.log('📹 Starting new video call');
+        }
       }} 
       className="action-btn success"
     >
@@ -2816,7 +2842,15 @@ function ChatRoom() {
         <VideoCall
           roomId={roomId}
           participants={participants}
-          onClose={() => setShowVideoCall(false)}
+          onClose={() => {
+            setShowVideoCall(false);
+            // Notify that video call is no longer active
+            socketService.emit('video-call-active', {
+              roomId: roomId,
+              active: false
+            });
+            setActiveVideoCall(false);
+          }}
         />
       )}
 

@@ -576,11 +576,17 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         console.log(`🚀 Starting WebRTC connection ${index + 1}/${otherParticipants.length} for:`, participantId);
         console.log(`🚀 Current user ID: ${currentUserId}, Participant ID: ${participantId}`);
         
+        // Check if connection already exists
+        if (peerConnections.current[participantId]) {
+          console.log(`🚀 Connection already exists for ${participantId}, skipping`);
+          return;
+        }
+        
         // Always initiate connection for now to avoid conflicts
         console.log(`🚀 Initiating WebRTC connection immediately`);
         startWebRTCConnection(participantId, participant);
       });
-    }, 500); // Increased delay to ensure proper setup
+    }, 1000); // Increased delay to ensure proper setup
 
     // Notify other participants that we joined the video call
     try {
@@ -689,6 +695,8 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
         console.log(`✅ ICE connection established with ${userId}`);
         setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'connected' } : s));
+        // Update overall connection status
+        setConnectionStatus('connected');
       } else if (peerConnection.iceConnectionState === 'failed') {
         console.log(`❌ ICE connection failed with ${userId}`);
         console.log(`🔄 Attempting ICE connection retry for ${userId}`);
@@ -702,6 +710,9 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         }, 2000);
         
         setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'ice-retrying' } : s));
+      } else if (peerConnection.iceConnectionState === 'checking') {
+        console.log(`🔍 ICE connection checking for ${userId}`);
+        setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'connecting' } : s));
       }
     };
 
@@ -769,7 +780,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         
         setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'retrying' } : s));
       }
-    }, 20000); // 20 second timeout
+    }, 15000); // 15 second timeout
 
     // Clear timeout when connection succeeds
     const originalOnTrack = peerConnection.ontrack;

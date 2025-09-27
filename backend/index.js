@@ -435,6 +435,20 @@ io.on('connection', (socket) => {
     
     console.log(`📹 Video call notification sent to room ${roomId} by ${startedBy}`);
   });
+
+  // Handle video call active status
+  socket.on('video-call-active', (data) => {
+    console.log('📹 Video call active status:', data);
+    const { roomId, active } = data;
+    
+    // Broadcast to all users in the room
+    socket.to(roomId).emit('video-call-active', {
+      roomId,
+      active
+    });
+    
+    console.log(`📹 Video call active status sent to room ${roomId}: ${active}`);
+  });
 });
 
 app.get('/', (req, res) => {
