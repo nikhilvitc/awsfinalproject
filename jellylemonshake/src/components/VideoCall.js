@@ -162,11 +162,47 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [error, setError] = useState('');
   const [componentError, setComponentError] = useState(null);
+  const [isSettingVideoStream, setIsSettingVideoStream] = useState(false);
   
   const localVideoRef = useRef(null);
   const remoteVideoRefs = useRef([]);
   const peerConnections = useRef({});
   const localStreamRef = useRef(null);
+
+  // Centralized function to set video stream (prevents race conditions)
+  const setVideoStreamSafely = useCallback((stream) => {
+    if (isSettingVideoStream) {
+      console.log('⏳ Video stream setting already in progress, skipping...');
+      return;
+    }
+
+    if (!localVideoRef.current) {
+      console.log('⏳ Video element not ready, skipping...');
+      return;
+    }
+
+    if (localVideoRef.current.srcObject === stream) {
+      console.log('✅ Video stream already set, skipping...');
+      return;
+    }
+
+    setIsSettingVideoStream(true);
+    console.log('🎥 Setting video stream safely...');
+
+    try {
+      localVideoRef.current.srcObject = stream;
+      localVideoRef.current.play().then(() => {
+        console.log('✅ Video stream set and playing successfully');
+        setIsSettingVideoStream(false);
+      }).catch(err => {
+        console.warn('⚠️ Video play failed, but stream is set:', err);
+        setIsSettingVideoStream(false);
+      });
+    } catch (error) {
+      console.error('❌ Error setting video stream:', error);
+      setIsSettingVideoStream(false);
+    }
+  }, [isSettingVideoStream]);
 
   useEffect(() => {
     try {
@@ -306,32 +342,16 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   useEffect(() => {
     if (localStream && localVideoRef.current && !localVideoRef.current.srcObject) {
       console.log('🎥 Setting video stream on mount - stream available:', !!localStream, 'element ready:', !!localVideoRef.current);
-      try {
-        localVideoRef.current.srcObject = localStream;
-        localVideoRef.current.play().catch(err => {
-          console.warn('Video play failed on mount:', err);
-        });
-        console.log('✅ Video stream set successfully on mount');
-      } catch (error) {
-        console.error('❌ Error setting video stream on mount:', error);
-      }
+      setVideoStreamSafely(localStream);
     }
-  }, [localStream]);
+  }, [localStream, setVideoStreamSafely]);
 
   // Additional effect to handle video element availability
   useEffect(() => {
     const checkVideoElement = () => {
       if (localStream && localVideoRef.current && !localVideoRef.current.srcObject) {
         console.log('🎥 Video element available, setting stream - stream:', !!localStream, 'element:', !!localVideoRef.current);
-        try {
-          localVideoRef.current.srcObject = localStream;
-          localVideoRef.current.play().catch(err => {
-            console.warn('Video play failed in checkVideoElement:', err);
-          });
-          console.log('✅ Video stream set successfully in checkVideoElement');
-        } catch (error) {
-          console.error('❌ Error setting video stream in checkVideoElement:', error);
-        }
+        setVideoStreamSafely(localStream);
       }
     };
 
@@ -342,7 +362,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     const timeoutId = setTimeout(checkVideoElement, 200);
 
     return () => clearTimeout(timeoutId);
-  }, [localStream]);
+  }, [localStream, setVideoStreamSafely]);
 
   const initializeVideoCall = async () => {
     try {
@@ -370,26 +390,9 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       // Set video stream with improved retry mechanism
       const setVideoStream = (retryCount = 0) => {
         if (localVideoRef.current) {
-          try {
-            localVideoRef.current.srcObject = stream;
-            localVideoRef.current.play().catch(err => {
-              console.warn('Video play failed, but stream is set:', err);
-            });
-            console.log('✅ Local video stream set successfully:', stream);
-            console.log('✅ Video element:', localVideoRef.current);
-            return; // Success, exit retry loop
-          } catch (error) {
-            console.error('❌ Error setting video stream:', error);
-            if (retryCount < 10) { // Reduced retries for faster failure
-              console.warn(`Retrying video stream setup... (attempt ${retryCount + 1}/10)`);
-              setTimeout(() => setVideoStream(retryCount + 1), 200);
-            } else {
-              console.error('❌ Failed to set video stream after 10 attempts');
-              setError('Failed to set video stream. Please refresh and try again.');
-              setConnectionStatus('error');
-            }
-            return;
-          }
+          console.log('🎥 Video element ready, setting stream safely...');
+          setVideoStreamSafely(stream);
+          return; // Success, exit retry loop
         }
         
         if (retryCount < 50) { // Max 5 seconds of retries
