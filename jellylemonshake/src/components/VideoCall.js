@@ -2,22 +2,128 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import '../styles/components/VideoCall.css';
 
-// Safe socket service import with fallback
+// Safe socket service import with comprehensive fallback
 let socketService = null;
 try {
-  socketService = require('../services/socketService').default;
+  const importedService = require('../services/socketService');
+  socketService = importedService.default || importedService;
+  
+  // Validate that the service has required methods
+  if (!socketService || typeof socketService.on !== 'function' || typeof socketService.emit !== 'function') {
+    throw new Error('Socket service methods not available');
+  }
 } catch (error) {
-  console.error('Failed to import socket service:', error);
-  // Create a fallback socket service
+  console.error('Failed to import or validate socket service:', error);
+  // Create a comprehensive fallback socket service
   socketService = {
-    on: () => console.warn('Socket service not available'),
-    emit: () => console.warn('Socket service not available'),
-    off: () => console.warn('Socket service not available'),
-    connect: () => console.warn('Socket service not available'),
-    disconnect: () => console.warn('Socket service not available'),
-    isConnected: () => false
+    on: (event, callback) => {
+      console.warn(`Socket service not available - cannot listen to event: ${event}`);
+      return false;
+    },
+    emit: (event, data) => {
+      console.warn(`Socket service not available - cannot emit event: ${event}`);
+      return false;
+    },
+    off: (event, callback) => {
+      console.warn(`Socket service not available - cannot remove listener for event: ${event}`);
+      return false;
+    },
+    connect: () => {
+      console.warn('Socket service not available - cannot connect');
+      return false;
+    },
+    disconnect: () => {
+      console.warn('Socket service not available - cannot disconnect');
+      return false;
+    },
+    isConnected: () => {
+      console.warn('Socket service not available - not connected');
+      return false;
+    }
   };
 }
+
+// Additional safety wrapper
+const safeSocketService = {
+  on: (event, callback) => {
+    try {
+      if (socketService && typeof socketService.on === 'function') {
+        return socketService.on(event, callback);
+      } else {
+        console.warn(`Safe socket service - cannot listen to event: ${event}`);
+        return false;
+      }
+    } catch (error) {
+      console.error(`Error in socket.on for event ${event}:`, error);
+      return false;
+    }
+  },
+  emit: (event, data) => {
+    try {
+      if (socketService && typeof socketService.emit === 'function') {
+        return socketService.emit(event, data);
+      } else {
+        console.warn(`Safe socket service - cannot emit event: ${event}`);
+        return false;
+      }
+    } catch (error) {
+      console.error(`Error in socket.emit for event ${event}:`, error);
+      return false;
+    }
+  },
+  off: (event, callback) => {
+    try {
+      if (socketService && typeof socketService.off === 'function') {
+        return socketService.off(event, callback);
+      } else {
+        console.warn(`Safe socket service - cannot remove listener for event: ${event}`);
+        return false;
+      }
+    } catch (error) {
+      console.error(`Error in socket.off for event ${event}:`, error);
+      return false;
+    }
+  },
+  connect: () => {
+    try {
+      if (socketService && typeof socketService.connect === 'function') {
+        return socketService.connect();
+      } else {
+        console.warn('Safe socket service - cannot connect');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error in socket.connect:', error);
+      return false;
+    }
+  },
+  disconnect: () => {
+    try {
+      if (socketService && typeof socketService.disconnect === 'function') {
+        return socketService.disconnect();
+      } else {
+        console.warn('Safe socket service - cannot disconnect');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error in socket.disconnect:', error);
+      return false;
+    }
+  },
+  isConnected: () => {
+    try {
+      if (socketService && typeof socketService.isConnected === 'function') {
+        return socketService.isConnected();
+      } else {
+        console.warn('Safe socket service - not connected');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error in socket.isConnected:', error);
+      return false;
+    }
+  }
+};
 
 function VideoCall({ roomId, onClose, participants = [] }) {
   const { user, isAuthenticated } = useAuth();
@@ -44,15 +150,13 @@ function VideoCall({ roomId, onClose, participants = [] }) {
             throw new Error('Socket service not available');
           }
           
-          // Try to connect socket service
-          if (typeof socketService.connect === 'function') {
-            socketService.connect();
-          }
-          
-          // Check if socket service methods are available
-          if (typeof socketService.on !== 'function' || typeof socketService.emit !== 'function') {
-            throw new Error('Socket service methods not available');
-          }
+        // Try to connect socket service
+        safeSocketService.connect();
+        
+        // Check if socket service methods are available
+        if (!safeSocketService.on || !safeSocketService.emit) {
+          throw new Error('Socket service methods not available');
+        }
           
           initializeVideoCall();
           setupSignaling();
@@ -80,7 +184,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   const setupSignaling = () => {
     try {
       // Check if socket service is available
-      if (!socketService || typeof socketService.on !== 'function') {
+      if (!safeSocketService || typeof safeSocketService.on !== 'function') {
         console.error('Socket service not available or invalid');
         setError('Socket service not available. Please refresh the page.');
         setConnectionStatus('error');
@@ -88,7 +192,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       }
 
       // Listen for incoming WebRTC offers
-      socketService.on('webrtc-offer', async (data) => {
+      safeSocketService.on('webrtc-offer', async (data) => {
         if (data.roomId === roomId && data.from !== user?.id) {
           console.log('Received WebRTC offer from:', data.from);
           await handleIncomingOffer(data);
@@ -96,7 +200,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       });
 
     // Listen for incoming WebRTC answers
-    socketService.on('webrtc-answer', async (data) => {
+    safeSocketService.on('webrtc-answer', async (data) => {
       if (data.roomId === roomId && data.from !== user?.id) {
         console.log('Received WebRTC answer from:', data.from);
         await handleIncomingAnswer(data);
@@ -104,7 +208,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     });
 
     // Listen for ICE candidates
-    socketService.on('webrtc-ice-candidate', async (data) => {
+    safeSocketService.on('webrtc-ice-candidate', async (data) => {
       if (data.roomId === roomId && data.from !== user?.id) {
         console.log('Received ICE candidate from:', data.from);
         await handleIncomingIceCandidate(data);
@@ -112,7 +216,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     });
 
     // Listen for user join/leave events
-    socketService.on('user-joined-video', (data) => {
+    safeSocketService.on('user-joined-video', (data) => {
       if (data.roomId === roomId && data.userId !== user?.id) {
         console.log('User joined video call:', data.userId);
         // Start WebRTC connection with new user
@@ -120,7 +224,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       }
     });
 
-    socketService.on('user-left-video', (data) => {
+    safeSocketService.on('user-left-video', (data) => {
       if (data.roomId === roomId) {
         console.log('User left video call:', data.userId);
         // Clean up connection
@@ -140,12 +244,12 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
   const cleanupSignaling = () => {
     try {
-      if (socketService && typeof socketService.off === 'function') {
-        socketService.off('webrtc-offer');
-        socketService.off('webrtc-answer');
-        socketService.off('webrtc-ice-candidate');
-        socketService.off('user-joined-video');
-        socketService.off('user-left-video');
+      if (safeSocketService && typeof safeSocketService.off === 'function') {
+        safeSocketService.off('webrtc-offer');
+        safeSocketService.off('webrtc-answer');
+        safeSocketService.off('webrtc-ice-candidate');
+        safeSocketService.off('user-joined-video');
+        safeSocketService.off('user-left-video');
       }
     } catch (error) {
       console.error('Error cleaning up WebRTC signaling:', error);
@@ -215,7 +319,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
     // Notify other participants that we joined the video call
     try {
-      socketService.emit('user-joined-video', {
+      safeSocketService.emit('user-joined-video', {
         roomId,
         userId: user?.id,
         username: user?.username || user?.email
@@ -283,7 +387,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       
       console.log('Sending offer to:', userId);
       try {
-        socketService.emit('webrtc-offer', {
+        safeSocketService.emit('webrtc-offer', {
           roomId,
           to: userId,
           from: user?.id,
@@ -341,16 +445,16 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
           console.log('Sending ICE candidate to:', userId);
-          try {
-            socketService.emit('webrtc-ice-candidate', {
-              roomId,
-              to: userId,
-              from: user?.id,
-              candidate: event.candidate
-            });
-          } catch (error) {
-            console.error('Failed to emit ICE candidate:', error);
-          }
+        try {
+          safeSocketService.emit('webrtc-ice-candidate', {
+            roomId,
+            to: userId,
+            from: user?.id,
+            candidate: event.candidate
+          });
+        } catch (error) {
+          console.error('Failed to emit ICE candidate:', error);
+        }
         }
       };
 
@@ -364,7 +468,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       
       console.log('Sending answer to:', userId);
       try {
-        socketService.emit('webrtc-answer', {
+        safeSocketService.emit('webrtc-answer', {
           roomId,
           to: userId,
           from: user?.id,
@@ -469,7 +573,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   const cleanup = () => {
     // Notify other participants that we're leaving
     try {
-      socketService.emit('user-left-video', {
+      safeSocketService.emit('user-left-video', {
         roomId,
         userId: user?.id
       });
