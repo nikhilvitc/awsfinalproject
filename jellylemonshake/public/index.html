@@ -6,16 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#2196f3" />
     <meta name="description" content="Real-time Chat Application with Rooms" />
-    <meta http-equiv="Content-Security-Policy" content="default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:; media-src * blob: mediastream:; connect-src *; frame-src *; object-src *; base-uri *; worker-src * blob:; child-src * blob:; form-action *;" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; connect-src 'self' https: wss:; frame-src 'self'; object-src 'none'; base-uri 'self'; worker-src 'self' blob:; child-src 'self' blob:; form-action 'self';" />
     
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/favicon.ico" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
-    <!-- Add Marked library for markdown parsing -->
-    <script
-      crossorigin
-      src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"
-    ></script>
+    <!-- Marked library removed to avoid CSP eval() issues -->
 
     <title>ChatRooms</title>
   </head>
