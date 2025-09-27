@@ -841,29 +841,72 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           Connection Status: {connectionStatus}<br/>
           Local Stream: {localStream ? '✅ Active' : '❌ None'}<br/>
           Video Element: {localVideoRef.current ? '✅ Ready' : '❌ Not Ready'}<br/>
+          Video Stream Set: {localVideoRef.current?.srcObject ? '✅ Yes' : '❌ No'}<br/>
+          Video Playing: {localVideoRef.current?.paused === false ? '✅ Yes' : '❌ No'}<br/>
+          Video Dimensions: {localVideoRef.current?.videoWidth ? `${localVideoRef.current.videoWidth}x${localVideoRef.current.videoHeight}` : 'Unknown'}<br/>
           Remote Participants: {remoteStreams.length}<br/>
           Participants: {participants.map(p => p.username || p.email).join(', ')}<br/>
           Remote Streams: {remoteStreams.map(s => `${s.name} (${s.connectionStatus || 'unknown'})`).join(', ')}<br/>
-          <button 
-            onClick={() => {
-              if (localStream && localVideoRef.current) {
-                localVideoRef.current.srcObject = localStream;
-                localVideoRef.current.play();
-                console.log('Manually set video stream');
-              }
-            }}
-            style={{ 
-              marginTop: '5px', 
-              padding: '5px 10px', 
-              background: '#4285f4', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            🔄 Retry Video
-          </button>
+          <div style={{ marginTop: '10px', display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+            <button 
+              onClick={() => {
+                if (localStream && localVideoRef.current) {
+                  localVideoRef.current.srcObject = localStream;
+                  localVideoRef.current.play();
+                  console.log('🔄 Manually set video stream');
+                }
+              }}
+              style={{ 
+                padding: '5px 10px', 
+                background: '#4285f4', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              🔄 Retry Video
+            </button>
+            <button 
+              onClick={() => {
+                if (localVideoRef.current) {
+                  localVideoRef.current.play();
+                  console.log('▶️ Manually play video');
+                }
+              }}
+              style={{ 
+                padding: '5px 10px', 
+                background: '#34a853', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              ▶️ Play Video
+            </button>
+            <button 
+              onClick={() => {
+                console.log('🔍 Video Debug Info:');
+                console.log('Local Stream:', localStream);
+                console.log('Video Element:', localVideoRef.current);
+                console.log('Video srcObject:', localVideoRef.current?.srcObject);
+                console.log('Video paused:', localVideoRef.current?.paused);
+                console.log('Video readyState:', localVideoRef.current?.readyState);
+                console.log('Video dimensions:', localVideoRef.current?.videoWidth, 'x', localVideoRef.current?.videoHeight);
+              }}
+              style={{ 
+                padding: '5px 10px', 
+                background: '#ea4335', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              🔍 Debug Info
+            </button>
+          </div>
         </div>
 
         {/* Connection Status */}
@@ -899,9 +942,31 @@ function VideoCall({ roomId, onClose, participants = [] }) {
                     muted
                     playsInline
                     className="meet-video"
-                    onLoadedMetadata={() => console.log('Local video loaded')}
-                    onCanPlay={() => console.log('Local video can play')}
-                    onError={(e) => console.error('Local video error:', e)}
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'cover',
+                      backgroundColor: '#000',
+                      border: '2px solid #4285f4'
+                    }}
+                    onLoadedMetadata={() => {
+                      console.log('✅ Local video loaded successfully');
+                      console.log('Video dimensions:', localVideoRef.current?.videoWidth, 'x', localVideoRef.current?.videoHeight);
+                    }}
+                    onCanPlay={() => {
+                      console.log('✅ Local video can play');
+                      if (localVideoRef.current && !localVideoRef.current.srcObject && localStream) {
+                        console.log('🔧 Setting video stream in onCanPlay');
+                        localVideoRef.current.srcObject = localStream;
+                      }
+                    }}
+                    onError={(e) => {
+                      console.error('❌ Local video error:', e);
+                      console.error('Video error details:', e.target.error);
+                    }}
+                    onLoadStart={() => console.log('🎬 Local video load started')}
+                    onPlay={() => console.log('▶️ Local video started playing')}
+                    onPause={() => console.log('⏸️ Local video paused')}
                   />
                   <div className="meet-video-overlay">
                     <div className="participant-info">
