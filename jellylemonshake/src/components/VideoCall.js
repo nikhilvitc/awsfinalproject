@@ -238,7 +238,8 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               name: data.username || data.email || `User ${data.userId}`,
               stream: null, // Will be set when WebRTC connection is established
               isVideoEnabled: true,
-              isAudioEnabled: true
+              isAudioEnabled: true,
+              connectionStatus: 'ready' // Ready to connect
             }];
           }
           return prev;
@@ -351,7 +352,8 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         name: participant.username || participant.email || `User ${participant.userId}`,
         stream: null, // Will be set when WebRTC connection is established
         isVideoEnabled: true,
-        isAudioEnabled: true
+        isAudioEnabled: true,
+        connectionStatus: 'ready' // Ready to connect, not actively connecting
       }));
       
       // Merge with existing participants, avoiding duplicates
@@ -378,6 +380,11 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   };
 
   const startWebRTCConnection = async (userId, participant = null) => {
+    // Update connection status to 'connecting'
+    setRemoteStreams(prev => {
+      return prev.map(s => s.id === userId ? { ...s, connectionStatus: 'connecting' } : s);
+    });
+
     const peerConnection = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -400,14 +407,15 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       setRemoteStreams(prev => {
         const existing = prev.find(s => s.id === userId);
         if (existing) {
-          return prev.map(s => s.id === userId ? { ...s, stream: remoteStream } : s);
+          return prev.map(s => s.id === userId ? { ...s, stream: remoteStream, connectionStatus: 'connected' } : s);
         } else {
           return [...prev, {
             id: userId,
             name: participant?.username || participant?.email || `User ${userId}`,
             stream: remoteStream,
             isVideoEnabled: true,
-            isAudioEnabled: true
+            isAudioEnabled: true,
+            connectionStatus: 'connected'
           }];
         }
       });
@@ -476,14 +484,15 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         setRemoteStreams(prev => {
           const existing = prev.find(s => s.id === userId);
           if (existing) {
-            return prev.map(s => s.id === userId ? { ...s, stream: remoteStream } : s);
+            return prev.map(s => s.id === userId ? { ...s, stream: remoteStream, connectionStatus: 'connected' } : s);
           } else {
             return [...prev, {
               id: userId,
               name: `User ${userId}`,
               stream: remoteStream,
               isVideoEnabled: true,
-              isAudioEnabled: true
+              isAudioEnabled: true,
+              connectionStatus: 'connected'
             }];
           }
         });
@@ -729,7 +738,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           Local Stream: {localStream ? '✅ Active' : '❌ None'}<br/>
           Remote Participants: {remoteStreams.length}<br/>
           Participants: {participants.map(p => p.username || p.email).join(', ')}<br/>
-          Remote Streams: {remoteStreams.map(s => `${s.name} (${s.stream ? 'stream' : 'no stream'})`).join(', ')}
+          Remote Streams: {remoteStreams.map(s => `${s.name} (${s.connectionStatus || 'unknown'})`).join(', ')}
         </div>
 
         {/* Connection Status */}
@@ -808,7 +817,8 @@ function VideoCall({ roomId, onClose, participants = [] }) {
                         </div>
                         <div className="meet-participant-info">
                           <span className="meet-participant-name">{participant.name}</span>
-                          {!participant.stream && <div className="meet-connecting">Connecting...</div>}
+                          {participant.connectionStatus === 'connecting' && <div className="meet-connecting">Connecting...</div>}
+                          {participant.connectionStatus === 'ready' && <div className="meet-ready">Ready</div>}
                         </div>
                       </div>
                     )}
