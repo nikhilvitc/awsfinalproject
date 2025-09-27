@@ -420,6 +420,21 @@ io.on('connection', (socket) => {
     
     console.log(`📤 WebRTC ICE candidate forwarded from ${from} to ${to} in room ${roomId}`);
   });
+
+  // Handle video call started notification
+  socket.on('video-call-started', (data) => {
+    console.log('📹 Video call started notification:', data);
+    const { roomId, startedBy, timestamp } = data;
+    
+    // Broadcast to all other users in the room
+    socket.to(roomId).emit('video-call-started', {
+      roomId,
+      startedBy,
+      timestamp
+    });
+    
+    console.log(`📹 Video call notification sent to room ${roomId} by ${startedBy}`);
+  });
 });
 
 app.get('/', (req, res) => {

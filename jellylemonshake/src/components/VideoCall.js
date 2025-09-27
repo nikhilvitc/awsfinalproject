@@ -576,26 +576,11 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         console.log(`🚀 Starting WebRTC connection ${index + 1}/${otherParticipants.length} for:`, participantId);
         console.log(`🚀 Current user ID: ${currentUserId}, Participant ID: ${participantId}`);
         
-        // Use a more robust strategy: initiate connection if our ID is lexicographically smaller
-        // or if we're the first to join (no existing connections)
-        const shouldInitiate = currentUserId < participantId || 
-                              Object.keys(peerConnections.current).length === 0;
-        
-        if (shouldInitiate) {
-          console.log(`🚀 Initiating WebRTC connection (we should initiate)`);
-          startWebRTCConnection(participantId, participant);
-        } else {
-          console.log(`🚀 Waiting for participant to initiate connection (they should initiate)`);
-          // Set a timeout to initiate connection if the other user doesn't start it
-          setTimeout(() => {
-            if (!peerConnections.current[participantId]) {
-              console.log(`🚀 Timeout reached, initiating connection as fallback`);
-              startWebRTCConnection(participantId, participant);
-            }
-          }, 2000); // 2 second timeout
-        }
+        // Always initiate connection for now to avoid conflicts
+        console.log(`🚀 Initiating WebRTC connection immediately`);
+        startWebRTCConnection(participantId, participant);
       });
-    }, 100);
+    }, 500); // Increased delay to ensure proper setup
 
     // Notify other participants that we joined the video call
     try {
@@ -1444,6 +1429,12 @@ function VideoCall({ roomId, onClose, participants = [] }) {
             <div className="connecting-spinner"></div>
             <h3>Connecting to video call...</h3>
             <p>Please wait while we set up your video call</p>
+            <p className="connection-details">
+              {remoteStreams.length > 0 ? 
+                `Found ${remoteStreams.length} participant(s). Establishing connections...` : 
+                'Waiting for other participants...'
+              }
+            </p>
           </div>
         )}
 

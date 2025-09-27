@@ -126,6 +126,7 @@ function ChatRoom() {
   const [showCollaborativeEditor, setShowCollaborativeEditor] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
+  const [videoCallNotification, setVideoCallNotification] = useState(null);
   
   // Socket.IO states
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -490,6 +491,18 @@ function ChatRoom() {
 
     socketService.onUsersCount((count) => {
       setOnlineUsersCount(count);
+    });
+
+    // Listen for video call notifications
+    socketService.on('video-call-started', (data) => {
+      console.log('📹 Video call notification received:', data);
+      if (data.roomId === roomId && data.startedBy !== (user?.username || user?.email)) {
+        setVideoCallNotification({
+          startedBy: data.startedBy,
+          roomId: data.roomId,
+          timestamp: Date.now()
+        });
+      }
     });
 
     socketService.onUserTyping((data) => {
@@ -1953,13 +1966,24 @@ function ChatRoom() {
             </svg>
             🚀 Code Together
           </button>
-          <button onClick={() => setShowVideoCall(true)} className="action-btn success">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M23 7l-7 5 7 5V7z"></path>
-              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-            </svg>
-            📹 Video Call
-          </button>
+    <button 
+      onClick={() => {
+        setShowVideoCall(true);
+        // Notify other users that a video call has started
+        socketService.emit('video-call-started', {
+          roomId: roomId,
+          startedBy: user?.username || user?.email,
+          timestamp: Date.now()
+        });
+      }} 
+      className="action-btn success"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M23 7l-7 5 7 5V7z"></path>
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+      </svg>
+      📹 Video Call
+    </button>
           <button onClick={() => setShowMeetingsList(true)} className="action-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -2794,6 +2818,44 @@ function ChatRoom() {
           participants={participants}
           onClose={() => setShowVideoCall(false)}
         />
+      )}
+
+      {/* Video Call Notification Popup */}
+      {videoCallNotification && (
+        <div className="video-call-notification-overlay">
+          <div className="video-call-notification-modal">
+            <div className="notification-header">
+              <h3>📹 Video Call Started</h3>
+              <button 
+                className="close-notification-btn"
+                onClick={() => setVideoCallNotification(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="notification-content">
+              <p><strong>{videoCallNotification.startedBy}</strong> has started a video call in this room.</p>
+              <p>Would you like to join?</p>
+            </div>
+            <div className="notification-actions">
+              <button 
+                className="join-video-btn"
+                onClick={() => {
+                  setShowVideoCall(true);
+                  setVideoCallNotification(null);
+                }}
+              >
+                🎥 Join Video Call
+              </button>
+              <button 
+                className="decline-btn"
+                onClick={() => setVideoCallNotification(null)}
+              >
+                ❌ Decline
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showMeetingScheduler && (
