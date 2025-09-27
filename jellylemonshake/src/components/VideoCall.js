@@ -321,17 +321,20 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         email: data.email
       });
       
-      if (data.roomId === roomId && data.userId !== user?.id) {
-        console.log('✅ Processing user joined video call:', data.userId);
+      const currentUserId = user?.id || user?.username || user?.email;
+      const participantId = data.userId || data.username || data.email;
+      
+      if (data.roomId === roomId && participantId !== currentUserId) {
+        console.log('✅ Processing user joined video call:', participantId);
         
         // Add participant to remoteStreams immediately
         setRemoteStreams(prev => {
-          const existing = prev.find(s => s.id === data.userId);
+          const existing = prev.find(s => s.id === participantId);
           if (!existing) {
-            console.log('➕ Adding new participant from user-joined-video:', data.userId);
+            console.log('➕ Adding new participant from user-joined-video:', participantId);
             const newParticipant = {
-              id: data.userId,
-              name: data.username || data.email || `User ${data.userId}`,
+              id: participantId,
+              name: data.username || data.email || `User ${participantId}`,
               stream: null, // Will be set when WebRTC connection is established
               isVideoEnabled: true,
               isAudioEnabled: true,
@@ -340,15 +343,15 @@ function VideoCall({ roomId, onClose, participants = [] }) {
             console.log('➕ New participant object:', newParticipant);
             return [...prev, newParticipant];
           }
-          console.log('👤 Participant already exists:', data.userId);
+          console.log('👤 Participant already exists:', participantId);
           return prev;
         });
         
         // Start WebRTC connection with new user
-        console.log('🚀 Starting WebRTC connection for new participant:', data.userId);
-        startWebRTCConnection(data.userId, { userId: data.userId, username: data.username, email: data.email });
+        console.log('🚀 Starting WebRTC connection for new participant:', participantId);
+        startWebRTCConnection(participantId, { userId: data.userId, username: data.username, email: data.email });
       } else {
-        console.log('❌ Ignoring user-joined-video - roomId:', data.roomId, 'expected:', roomId, 'userId:', data.userId, 'user:', user?.id);
+        console.log('❌ Ignoring user-joined-video - roomId:', data.roomId, 'expected:', roomId, 'participantId:', participantId, 'user:', currentUserId);
       }
     });
 
@@ -507,8 +510,12 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     
     // Set up WebRTC peer connections for each participant
     const otherParticipants = participants.filter(p => {
-      const isNotCurrentUser = p.userId !== user?.id;
-      console.log(`🔍 Participant ${p.userId} vs current user ${user?.id}: ${isNotCurrentUser ? 'Different' : 'Same'}`);
+      // Handle different participant structures
+      const participantId = p.userId || p.username || p.email;
+      const currentUserId = user?.id || user?.username || user?.email;
+      const isNotCurrentUser = participantId !== currentUserId;
+      console.log(`🔍 Participant ${participantId} vs current user ${currentUserId}: ${isNotCurrentUser ? 'Different' : 'Same'}`);
+      console.log(`🔍 Participant structure:`, p);
       return isNotCurrentUser;
     });
     console.log('👥 Other participants after filtering:', otherParticipants);
@@ -516,8 +523,8 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     // Add participants to remoteStreams immediately (before WebRTC connection)
     setRemoteStreams(prev => {
       const newParticipants = otherParticipants.map(participant => ({
-        id: participant.userId,
-        name: participant.username || participant.email || `User ${participant.userId}`,
+        id: participant.userId || participant.username || participant.email,
+        name: participant.username || participant.email || `User ${participant.userId || participant.username}`,
         stream: null, // Will be set when WebRTC connection is established
         isVideoEnabled: true,
         isAudioEnabled: true,
@@ -536,8 +543,9 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     // Add a small delay to ensure participants are added to state before starting connections
     setTimeout(() => {
       otherParticipants.forEach((participant, index) => {
-        console.log(`🚀 Starting WebRTC connection ${index + 1}/${otherParticipants.length} for:`, participant.userId);
-        startWebRTCConnection(participant.userId, participant);
+        const participantId = participant.userId || participant.username || participant.email;
+        console.log(`🚀 Starting WebRTC connection ${index + 1}/${otherParticipants.length} for:`, participantId);
+        startWebRTCConnection(participantId, participant);
       });
     }, 100);
 
