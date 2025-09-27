@@ -486,20 +486,13 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       // Set up WebRTC connections
       setupWebRTCConnections();
       
-      // Set a timeout to detect stuck connections
+      // Set a timeout to detect stuck connections (only for multi-participant calls)
       const timeout = setTimeout(() => {
-        console.log('⏰ Connection timeout check');
-        console.log('⏰ Current connection status:', connectionStatus);
-        console.log('⏰ Remote streams count:', remoteStreams.length);
-        console.log('⏰ Participants count:', participants.length);
-        console.log('⏰ Socket connected:', safeSocketService.isConnected());
-        
-        if (connectionStatus === 'connecting') {
+        if (connectionStatus === 'connecting' && participants.length > 1) {
           console.log('⚠️ Connection appears to be stuck');
           setError('Connection appears to be stuck. Please try refreshing or check your network connection.');
           
           // Try to recover by re-emitting user-joined-video
-          console.log('🔄 Attempting recovery by re-emitting user-joined-video');
           try {
             safeSocketService.emit('user-joined-video', {
               roomId,
@@ -507,7 +500,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               username: user?.username || user?.email
             });
           } catch (error) {
-            console.error('❌ Recovery emit failed:', error);
+            console.error('Recovery emit failed:', error);
           }
         }
       }, 15000); // 15 second timeout
@@ -533,6 +526,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     
     // If no other participants, set connection status to connected (solo call)
     if (otherParticipants.length === 0) {
+      console.log('Solo call - no other participants, showing local video only');
       setConnectionStatus('connected');
       return;
     }
@@ -1101,7 +1095,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
             <p className="connection-details">
               {remoteStreams.length > 0 ? 
                 `Found ${remoteStreams.length} participant(s). Establishing connections...` : 
-                'Waiting for other participants...'
+                'Setting up your video call...'
               }
             </p>
           </div>
@@ -1126,9 +1120,9 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         {(connectionStatus === 'connected' || connectionStatus === 'connecting') && (
           <div className="meet-content">
             {/* Main Video Grid */}
-            <div className="meet-video-grid">
+            <div className={`meet-video-grid ${remoteStreams.length === 0 ? 'solo-call' : ''}`}>
               {/* Local Video - Google Meet style */}
-              <div className="meet-participant local-participant">
+              <div className={`meet-participant local-participant ${remoteStreams.length === 0 ? 'solo-participant' : ''}`}>
                 <div className="meet-video-container">
                   <video
                     ref={localVideoRef}
@@ -1141,7 +1135,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
                       height: '100%', 
                       objectFit: 'cover',
                       backgroundColor: '#000',
-                      border: '2px solid #4285f4'
+                      border: remoteStreams.length === 0 ? 'none' : '2px solid #4285f4'
                     }}
                     onLoadedMetadata={() => {
                       // Video loaded successfully
@@ -1166,6 +1160,19 @@ function VideoCall({ roomId, onClose, participants = [] }) {
                   </div>
                 </div>
               </div>
+
+              {/* Solo call message */}
+              {remoteStreams.length === 0 && connectionStatus === 'connected' && (
+                <div className="solo-call-message">
+                  <div className="solo-call-content">
+                    <h3>You're in the call</h3>
+                    <p>Waiting for others to join...</p>
+                    <div className="solo-call-info">
+                      <span>Share this room with others to start the video call</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Remote Videos */}
               {remoteStreams.map((participant, index) => (
