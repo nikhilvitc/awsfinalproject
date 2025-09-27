@@ -11,15 +11,13 @@
   justify-content: stretch;
   z-index: 1000;
   padding: 0;
-  overflow: hidden; /* Prevent background scrolling */
+  overflow: auto; /* Allow scrolling */
 }
 
-/* Prevent body scrolling when editor is open */
+/* Allow body scrolling when editor is open */
 body.editor-open {
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-  height: 100%;
+  overflow: auto;
+  position: relative;
 }
 
 .collaborative-editor-container {
@@ -27,10 +25,10 @@ body.editor-open {
   border-radius: 0;
   box-shadow: none;
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
 }
 

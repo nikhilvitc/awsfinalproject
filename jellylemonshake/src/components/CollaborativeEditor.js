@@ -33,7 +33,7 @@ function CollaborativeEditor({ roomId, onClose, participants = [] }) {
       loadProjects();
     }
     
-    // Prevent background scrolling when editor is open
+    // Allow scrolling when editor is open
     document.body.classList.add('editor-open');
     
     // Ensure the editor is properly sized for full-screen
@@ -52,7 +52,7 @@ function CollaborativeEditor({ roomId, onClose, participants = [] }) {
     window.addEventListener('resize', handleResize);
     
     return () => {
-      // Re-enable background scrolling when editor is closed
+      // Clean up when editor is closed
       document.body.classList.remove('editor-open');
       window.removeEventListener('resize', handleResize);
     };
