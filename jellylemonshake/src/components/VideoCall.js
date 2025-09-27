@@ -628,8 +628,23 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     const peerConnection = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        { urls: 'stun:stun.ekiga.net' },
+        { urls: 'stun:stun.ideasip.com' },
+        { urls: 'stun:stun.schlund.de' },
+        { urls: 'stun:stun.stunprotocol.org:3478' },
+        { urls: 'stun:stun.voiparound.com' },
+        { urls: 'stun:stun.voipbuster.com' },
+        { urls: 'stun:stun.voipstunt.com' },
+        { urls: 'stun:stun.voxgratia.org' },
+        { urls: 'stun:stun.xten.com' }
+      ],
+      iceCandidatePoolSize: 10,
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require'
     });
 
     console.log('📡 Created peer connection for:', userId);
@@ -688,9 +703,20 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       console.log(`🧊 ICE connection state changed for ${userId}:`, peerConnection.iceConnectionState);
       if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
         console.log(`✅ ICE connection established with ${userId}`);
+        setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'connected' } : s));
       } else if (peerConnection.iceConnectionState === 'failed') {
         console.log(`❌ ICE connection failed with ${userId}`);
-        setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'ice-failed' } : s));
+        console.log(`🔄 Attempting ICE connection retry for ${userId}`);
+        
+        // Retry ICE connection
+        setTimeout(() => {
+          if (peerConnections.current[userId]) {
+            console.log(`🔄 Retrying ICE connection for ${userId}`);
+            peerConnections.current[userId].restartIce();
+          }
+        }, 2000);
+        
+        setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'ice-retrying' } : s));
       }
     };
 
@@ -713,13 +739,29 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
     peerConnections.current[userId] = peerConnection;
 
-    // Set up connection timeout
+    // Set up connection timeout with retry mechanism
     const connectionTimeout = setTimeout(() => {
       if (peerConnection.connectionState !== 'connected' && peerConnection.connectionState !== 'completed') {
         console.log(`⏰ Connection timeout for ${userId}, current state: ${peerConnection.connectionState}`);
-        setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'timeout' } : s));
+        console.log(`🔄 Attempting connection retry for ${userId}`);
+        
+        // Try to restart the connection
+        setTimeout(() => {
+          if (peerConnections.current[userId]) {
+            console.log(`🔄 Retrying connection for ${userId}`);
+            peerConnections.current[userId].close();
+            delete peerConnections.current[userId];
+            
+            // Retry the connection
+            setTimeout(() => {
+              startWebRTCConnection(userId, participant);
+            }, 1000);
+          }
+        }, 2000);
+        
+        setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'retrying' } : s));
       }
-    }, 10000); // 10 second timeout
+    }, 15000); // 15 second timeout
 
     // Clear timeout when connection succeeds
     const originalOnTrack = peerConnection.ontrack;
@@ -768,8 +810,23 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       peerConnection = new RTCPeerConnection({
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' },
+          { urls: 'stun:stun.ekiga.net' },
+          { urls: 'stun:stun.ideasip.com' },
+          { urls: 'stun:stun.schlund.de' },
+          { urls: 'stun:stun.stunprotocol.org:3478' },
+          { urls: 'stun:stun.voiparound.com' },
+          { urls: 'stun:stun.voipbuster.com' },
+          { urls: 'stun:stun.voipstunt.com' },
+          { urls: 'stun:stun.voxgratia.org' },
+          { urls: 'stun:stun.xten.com' }
+        ],
+        iceCandidatePoolSize: 10,
+        bundlePolicy: 'max-bundle',
+        rtcpMuxPolicy: 'require'
       });
 
       // Add local stream to peer connection
@@ -1260,6 +1317,37 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               }}
             >
               🚀 Force Connect
+            </button>
+            <button 
+              onClick={() => {
+                console.log('🔄 Restart All Connections - Closing and restarting all connections...');
+                Object.keys(peerConnections.current).forEach(userId => {
+                  if (peerConnections.current[userId]) {
+                    console.log(`🔄 Closing connection to: ${userId}`);
+                    peerConnections.current[userId].close();
+                    delete peerConnections.current[userId];
+                  }
+                });
+                
+                // Clear remote streams
+                setRemoteStreams([]);
+                
+                // Restart all connections after a delay
+                setTimeout(() => {
+                  console.log('🔄 Restarting all connections...');
+                  setupWebRTCConnections();
+                }, 1000);
+              }}
+              style={{ 
+                padding: '5px 10px', 
+                background: '#ff5722', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              🔄 Restart All
             </button>
           </div>
         </div>
