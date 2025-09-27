@@ -6,22 +6,16 @@ import '../styles/components/VideoCall.css';
 let socketService = null;
 let socketServiceAvailable = false;
 
-// Try to import socket service with comprehensive error handling
-try {
-  const importedService = require('../services/socketService');
-  socketService = importedService.default || importedService;
-  
-  // Validate that the service has required methods
-  if (socketService && typeof socketService.on === 'function' && typeof socketService.emit === 'function') {
-    socketServiceAvailable = true;
-    console.log('Socket service loaded successfully');
-  } else {
-    throw new Error('Socket service methods not available');
-  }
-} catch (error) {
-  console.error('Socket service not available - disabling video call functionality:', error);
+// Import socket service directly
+import socketService from '../services/socketService';
+
+// Validate socket service
+if (socketService && typeof socketService.on === 'function' && typeof socketService.emit === 'function') {
+  socketServiceAvailable = true;
+  console.log('Socket service loaded successfully');
+} else {
+  console.error('Socket service methods not available');
   socketServiceAvailable = false;
-  socketService = null;
 }
 
 // Additional safety wrapper
@@ -484,7 +478,8 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       // Start with a small delay to ensure DOM is ready
       setTimeout(() => setVideoStream(), 50);
       
-      setConnectionStatus('connected');
+      // Don't set connection status to 'connected' yet - wait for WebRTC connections
+      console.log('🎥 Local video stream obtained, setting up WebRTC connections...');
       
       // Set up WebRTC connections for real video streams
       setupWebRTCConnections();
@@ -536,16 +531,25 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     })));
     
     // Set up WebRTC peer connections for each participant
+    const currentUserId = user?.id || user?.username || user?.email;
+    console.log('🔍 Current user ID for filtering:', currentUserId);
+    
     const otherParticipants = participants.filter(p => {
-      // Handle different participant structures
-      const participantId = p.userId || p.username || p.email;
-      const currentUserId = user?.id || user?.username || user?.email;
+      // Handle different participant structures - be more flexible
+      const participantId = p.userId || p.username || p.email || p.id;
       const isNotCurrentUser = participantId !== currentUserId;
       console.log(`🔍 Participant ${participantId} vs current user ${currentUserId}: ${isNotCurrentUser ? 'Different' : 'Same'}`);
       console.log(`🔍 Participant structure:`, p);
       return isNotCurrentUser;
     });
     console.log('👥 Other participants after filtering:', otherParticipants);
+    
+    // If no other participants, set connection status to connected (solo call)
+    if (otherParticipants.length === 0) {
+      console.log('👤 No other participants found, setting status to connected');
+      setConnectionStatus('connected');
+      return;
+    }
     
     // Add participants to remoteStreams immediately (before WebRTC connection)
     setRemoteStreams(prev => {
@@ -786,6 +790,19 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     const originalOnTrack = peerConnection.ontrack;
     peerConnection.ontrack = (event) => {
       clearTimeout(connectionTimeout);
+      console.log(`🎉 Received remote stream from: ${userId}`);
+      console.log(`🎉 Stream tracks:`, event.streams[0]?.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })));
+      
+      // Update remote streams with actual video stream
+      setRemoteStreams(prev => prev.map(s => 
+        s.id === userId 
+          ? { ...s, stream: event.streams[0], connectionStatus: 'connected' }
+          : s
+      ));
+      
+      // Update overall connection status if this is the first successful connection
+      setConnectionStatus('connected');
+      
       if (originalOnTrack) originalOnTrack(event);
     };
 
@@ -828,6 +845,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       
     } catch (error) {
       console.error('❌ Error creating offer:', error);
+      setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'error' } : s));
     }
   };
 
