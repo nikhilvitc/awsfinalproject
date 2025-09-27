@@ -305,9 +305,16 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   // Ensure video stream is set when component mounts
   useEffect(() => {
     if (localStream && localVideoRef.current && !localVideoRef.current.srcObject) {
-      console.log('Setting video stream on mount');
-      localVideoRef.current.srcObject = localStream;
-      localVideoRef.current.play();
+      console.log('🎥 Setting video stream on mount - stream available:', !!localStream, 'element ready:', !!localVideoRef.current);
+      try {
+        localVideoRef.current.srcObject = localStream;
+        localVideoRef.current.play().catch(err => {
+          console.warn('Video play failed on mount:', err);
+        });
+        console.log('✅ Video stream set successfully on mount');
+      } catch (error) {
+        console.error('❌ Error setting video stream on mount:', error);
+      }
     }
   }, [localStream]);
 
@@ -315,9 +322,16 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   useEffect(() => {
     const checkVideoElement = () => {
       if (localStream && localVideoRef.current && !localVideoRef.current.srcObject) {
-        console.log('Video element available, setting stream');
-        localVideoRef.current.srcObject = localStream;
-        localVideoRef.current.play();
+        console.log('🎥 Video element available, setting stream - stream:', !!localStream, 'element:', !!localVideoRef.current);
+        try {
+          localVideoRef.current.srcObject = localStream;
+          localVideoRef.current.play().catch(err => {
+            console.warn('Video play failed in checkVideoElement:', err);
+          });
+          console.log('✅ Video stream set successfully in checkVideoElement');
+        } catch (error) {
+          console.error('❌ Error setting video stream in checkVideoElement:', error);
+        }
       }
     };
 
@@ -353,24 +367,43 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       localStreamRef.current = stream;
       setLocalStream(stream);
       
-      // Set video stream with retry mechanism and timeout
+      // Set video stream with improved retry mechanism
       const setVideoStream = (retryCount = 0) => {
         if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-          localVideoRef.current.play();
-          console.log('Local video stream set:', stream);
-          console.log('Video element:', localVideoRef.current);
-        } else if (retryCount < 50) { // Max 5 seconds of retries
-          console.warn(`Video element not ready, retrying in 100ms... (attempt ${retryCount + 1}/50)`);
+          try {
+            localVideoRef.current.srcObject = stream;
+            localVideoRef.current.play().catch(err => {
+              console.warn('Video play failed, but stream is set:', err);
+            });
+            console.log('✅ Local video stream set successfully:', stream);
+            console.log('✅ Video element:', localVideoRef.current);
+            return; // Success, exit retry loop
+          } catch (error) {
+            console.error('❌ Error setting video stream:', error);
+            if (retryCount < 10) { // Reduced retries for faster failure
+              console.warn(`Retrying video stream setup... (attempt ${retryCount + 1}/10)`);
+              setTimeout(() => setVideoStream(retryCount + 1), 200);
+            } else {
+              console.error('❌ Failed to set video stream after 10 attempts');
+              setError('Failed to set video stream. Please refresh and try again.');
+              setConnectionStatus('error');
+            }
+            return;
+          }
+        }
+        
+        if (retryCount < 50) { // Max 5 seconds of retries
+          console.warn(`⏳ Video element not ready, retrying in 100ms... (attempt ${retryCount + 1}/50)`);
           setTimeout(() => setVideoStream(retryCount + 1), 100);
         } else {
-          console.error('Video element not ready after 5 seconds, giving up');
+          console.error('❌ Video element not ready after 5 seconds, giving up');
           setError('Video element failed to initialize. Please refresh and try again.');
           setConnectionStatus('error');
         }
       };
       
-      setVideoStream();
+      // Start with a small delay to ensure DOM is ready
+      setTimeout(() => setVideoStream(), 50);
       
       setConnectionStatus('connected');
       
