@@ -250,8 +250,11 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         console.log('📥 Current remote streams:', remoteStreams.length);
         console.log('📥 Current participants:', participants.length);
         
-        if (data.roomId === roomId && data.from !== user?.id) {
-          console.log('✅ Processing WebRTC offer from:', data.from);
+        const currentUserId = user?.id || user?.username || user?.email;
+        const fromUserId = data.from;
+        
+        if (data.roomId === roomId && fromUserId !== currentUserId) {
+          console.log('✅ Processing WebRTC offer from:', fromUserId);
           console.log('✅ Starting handleIncomingOffer...');
           try {
             await handleIncomingOffer(data);
@@ -261,7 +264,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
             console.error('❌ Error details:', error.message, error.stack);
           }
         } else {
-          console.log('❌ Ignoring offer - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
+          console.log('❌ Ignoring offer - roomId:', data.roomId, 'expected:', roomId, 'from:', fromUserId, 'user:', currentUserId);
         }
       });
 
@@ -272,8 +275,11 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       console.log('📥 Answer type:', data.answer?.type, 'SDP length:', data.answer?.sdp?.length);
       console.log('📥 Peer connection exists:', !!peerConnections.current[data.from]);
       
-      if (data.roomId === roomId && data.from !== user?.id) {
-        console.log('✅ Processing WebRTC answer from:', data.from);
+      const currentUserId = user?.id || user?.username || user?.email;
+      const fromUserId = data.from;
+      
+      if (data.roomId === roomId && fromUserId !== currentUserId) {
+        console.log('✅ Processing WebRTC answer from:', fromUserId);
         console.log('✅ Starting handleIncomingAnswer...');
         try {
           await handleIncomingAnswer(data);
@@ -283,7 +289,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           console.error('❌ Error details:', error.message, error.stack);
         }
       } else {
-        console.log('❌ Ignoring answer - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
+        console.log('❌ Ignoring answer - roomId:', data.roomId, 'expected:', roomId, 'from:', fromUserId, 'user:', currentUserId);
       }
     });
 
@@ -294,8 +300,11 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       console.log('📥 ICE candidate:', data.candidate?.candidate, 'type:', data.candidate?.type);
       console.log('📥 Peer connection exists:', !!peerConnections.current[data.from]);
       
-      if (data.roomId === roomId && data.from !== user?.id) {
-        console.log('✅ Processing ICE candidate from:', data.from);
+      const currentUserId = user?.id || user?.username || user?.email;
+      const fromUserId = data.from;
+      
+      if (data.roomId === roomId && fromUserId !== currentUserId) {
+        console.log('✅ Processing ICE candidate from:', fromUserId);
         console.log('✅ Starting handleIncomingIceCandidate...');
         try {
           await handleIncomingIceCandidate(data);
@@ -305,7 +314,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           console.error('❌ Error details:', error.message, error.stack);
         }
       } else {
-        console.log('❌ Ignoring ICE candidate - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
+        console.log('❌ Ignoring ICE candidate - roomId:', data.roomId, 'expected:', roomId, 'from:', fromUserId, 'user:', currentUserId);
       }
     });
 
@@ -347,9 +356,17 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           return prev;
         });
         
-        // Start WebRTC connection with new user
+        // Start WebRTC connection with new user (only if we have lower ID)
+        const currentUserId = user?.id || user?.username || user?.email;
         console.log('🚀 Starting WebRTC connection for new participant:', participantId);
-        startWebRTCConnection(participantId, { userId: data.userId, username: data.username, email: data.email });
+        console.log(`🚀 Current user ID: ${currentUserId}, New participant ID: ${participantId}`);
+        
+        if (currentUserId < participantId) {
+          console.log(`🚀 Initiating WebRTC connection for new participant (we have lower ID)`);
+          startWebRTCConnection(participantId, { userId: data.userId, username: data.username, email: data.email });
+        } else {
+          console.log(`🚀 Waiting for new participant to initiate connection (they have lower ID)`);
+        }
       } else {
         console.log('❌ Ignoring user-joined-video - roomId:', data.roomId, 'expected:', roomId, 'participantId:', participantId, 'user:', currentUserId);
       }
@@ -541,11 +558,22 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     });
     
     // Add a small delay to ensure participants are added to state before starting connections
+    // Only initiate connections if we have a lower user ID to avoid conflicts
     setTimeout(() => {
+      const currentUserId = user?.id || user?.username || user?.email;
       otherParticipants.forEach((participant, index) => {
         const participantId = participant.userId || participant.username || participant.email;
         console.log(`🚀 Starting WebRTC connection ${index + 1}/${otherParticipants.length} for:`, participantId);
-        startWebRTCConnection(participantId, participant);
+        console.log(`🚀 Current user ID: ${currentUserId}, Participant ID: ${participantId}`);
+        
+        // Only initiate connection if our ID is "less than" participant ID (alphabetically)
+        // This prevents both users from trying to create offers simultaneously
+        if (currentUserId < participantId) {
+          console.log(`🚀 Initiating WebRTC connection (we have lower ID)`);
+          startWebRTCConnection(participantId, participant);
+        } else {
+          console.log(`🚀 Waiting for participant to initiate connection (they have lower ID)`);
+        }
       });
     }, 100);
 
