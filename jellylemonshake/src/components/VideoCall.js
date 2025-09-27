@@ -462,21 +462,22 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           return; // Success, exit retry loop
         }
         
-        if (retryCount < 50) { // Max 5 seconds of retries
-          console.warn(`⏳ Video element not ready, retrying in 100ms... (attempt ${retryCount + 1}/50)`);
+        if (retryCount < 100) { // Max 10 seconds of retries (increased from 5)
+          console.warn(`⏳ Video element not ready, retrying in 100ms... (attempt ${retryCount + 1}/100)`);
           setTimeout(() => setVideoStream(retryCount + 1), 100);
         } else {
-          console.error('❌ Video element not ready after 5 seconds, giving up');
+          console.error('❌ Video element not ready after 10 seconds, giving up');
           setError('Video element failed to initialize. Please refresh and try again.');
           setConnectionStatus('error');
         }
       };
       
-      // Start with a small delay to ensure DOM is ready
-      setTimeout(() => setVideoStream(), 50);
+      // Start with a longer delay to ensure DOM is ready and component is rendered
+      setTimeout(() => setVideoStream(), 200);
       
-      // Don't set connection status to 'connected' yet - wait for WebRTC connections
+      // Set connection status to 'connected' since we have local video
       console.log('🎥 Local video stream obtained, setting up WebRTC connections...');
+      setConnectionStatus('connected');
       
       // Set up WebRTC connections for real video streams
       setupWebRTCConnections();
@@ -1475,7 +1476,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           </div>
         )}
 
-        {connectionStatus === 'connected' && (
+        {(connectionStatus === 'connected' || connectionStatus === 'connecting') && (
           <div className="meet-content">
             {/* Main Video Grid */}
             <div className="meet-video-grid">
