@@ -951,7 +951,6 @@ function CollaborativeEditor({ roomId, onClose }) {
         )}
         </div>
       </div>
-    </div>
   );
 }
 
