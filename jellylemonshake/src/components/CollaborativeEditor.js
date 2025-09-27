@@ -21,8 +21,12 @@ function CollaborativeEditor({ roomId, onClose }) {
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [fileName, setFileName] = useState('');
   const [showSyntaxHighlighting, setShowSyntaxHighlighting] = useState(true);
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
+  const [showSideScroller, setShowSideScroller] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   
   const fileInputRef = useRef(null);
+  const contentRef = useRef(null);
 
   useEffect(() => {
     if (roomId) {
@@ -37,6 +41,33 @@ function CollaborativeEditor({ roomId, onClose }) {
       document.body.classList.remove('editor-open');
     };
   }, [roomId]);
+
+  // Handle scroll events for scroll buttons
+  useEffect(() => {
+    const handleScroll = () => {
+      if (contentRef.current) {
+        const scrollTop = contentRef.current.scrollTop;
+        const scrollHeight = contentRef.current.scrollHeight;
+        const clientHeight = contentRef.current.clientHeight;
+        
+        // Show scroll to top button when scrolled down
+        setShowScrollToTop(scrollTop > 200);
+        
+        // Show side scroller when content is scrollable
+        setShowSideScroller(scrollHeight > clientHeight);
+        
+        // Calculate scroll progress
+        const progress = (scrollTop / (scrollHeight - clientHeight)) * 100;
+        setScrollProgress(Math.min(100, Math.max(0, progress)));
+      }
+    };
+
+    const contentElement = contentRef.current;
+    if (contentElement) {
+      contentElement.addEventListener('scroll', handleScroll);
+      return () => contentElement.removeEventListener('scroll', handleScroll);
+    }
+  }, [selectedProject, files]);
 
   const loadProjects = async () => {
     try {
@@ -374,6 +405,36 @@ function CollaborativeEditor({ roomId, onClose }) {
     setSelectedLanguage('javascript');
   };
 
+  // Scroll functions
+  const scrollToTop = () => {
+    if (contentRef.current) {
+      contentRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
+  const scrollToPreview = () => {
+    const previewSection = document.querySelector('.preview-section');
+    if (previewSection) {
+      previewSection.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   const savePastedCode = async () => {
     if (!pastedCode.trim() || !fileName.trim() || !selectedProject) {
       setError('Please provide code, filename, and select a project');
@@ -477,11 +538,11 @@ function CollaborativeEditor({ roomId, onClose }) {
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
         
-        <div className="collaborative-editor-content">
+        <div className="collaborative-editor-content" ref={contentRef}>
           {error && <div className="error-message">{error}</div>}
           {success && <div className="success-message">{success}</div>}
           {/* Project Selection */}
-          <div className="project-section">
+          <div id="project-section" className="project-section">
             <div className="section-header">
               <h3>📁 Projects</h3>
               <button onClick={createProject} className="btn-primary" disabled={loading}>
@@ -510,7 +571,7 @@ function CollaborativeEditor({ roomId, onClose }) {
 
           {/* File Management */}
           {selectedProject && (
-            <div className="files-section">
+            <div id="files-section" className="files-section">
               <div className="section-header">
                 <h3>📄 Files</h3>
                 <div className="file-actions">
@@ -788,6 +849,48 @@ function CollaborativeEditor({ roomId, onClose }) {
             </div>
           </div>
         )}
+
+        {/* Scroll Progress Indicator */}
+        <div className={`scroll-progress ${showSideScroller ? 'visible' : ''}`}>
+          <div 
+            className="scroll-progress-bar" 
+            style={{ width: `${scrollProgress}%` }}
+          ></div>
+        </div>
+
+        {/* Scroll to Top Button */}
+        <button
+          className={`scroll-to-top ${showScrollToTop ? 'visible' : ''}`}
+          onClick={scrollToTop}
+          title="Scroll to top"
+        >
+          ↑
+        </button>
+
+        {/* Side Scroller */}
+        <div className={`side-scroller ${showSideScroller ? 'visible' : ''}`}>
+          <button
+            className="scroll-button"
+            onClick={() => scrollToSection('project-section')}
+            title="Go to Projects"
+          >
+            📁
+          </button>
+          <button
+            className="scroll-button"
+            onClick={() => scrollToSection('files-section')}
+            title="Go to Files"
+          >
+            📄
+          </button>
+          <button
+            className="scroll-button"
+            onClick={scrollToPreview}
+            title="Go to Preview"
+          >
+            👀
+          </button>
+        </div>
         </div>
       </div>
   );
