@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import MessageItem from "./MessageItem";
-import AdminPanel from "./AdminPanel";
-import MeetingsList from "./MeetingsList";
-import MeetingScheduler from "./MeetingScheduler";
-import CollaborativeEditor from "./CollaborativeEditor";
-import VideoCall from "./VideoCall";
 import { useAuth } from "./AuthContext";
 import socketService from "../services/socketService";
 import "../styles/components/ChatRoom.css";
-import EmojiPicker from 'emoji-picker-react';
+
+// Lazy load heavy components to avoid circular dependencies
+const MessageItem = lazy(() => import("./MessageItem"));
+const AdminPanel = lazy(() => import("./AdminPanel"));
+const MeetingsList = lazy(() => import("./MeetingsList"));
+const MeetingScheduler = lazy(() => import("./MeetingScheduler"));
+const CollaborativeEditor = lazy(() => import("./CollaborativeEditor"));
+const VideoCall = lazy(() => import("./VideoCall"));
+const EmojiPicker = lazy(() => import('emoji-picker-react'));
 
 function ChatRoom() {
   const { roomId } = useParams();
@@ -2539,9 +2541,9 @@ function ChatRoom() {
                 </div>
               ) : (
                 messages.map((message, index) => (
-                  <MessageItem
-                    key={index}
-                    message={message}
+                  <Suspense key={index} fallback={<div className="loading">Loading message...</div>}>
+                    <MessageItem
+                      message={message}
                     isCurrentUser={message.user === (user?.username || user?.email || getUserIdentifier())}
                     onTagMessage={handleTagMessage}
                     isHovered={
@@ -2567,6 +2569,7 @@ function ChatRoom() {
                     onDeleteMessage={handleDeleteMessage}
                     roomId={roomId}
                   />
+                  </Suspense>
                 ))
               )}
               <div ref={messagesEndRef} />
@@ -2737,11 +2740,13 @@ function ChatRoom() {
                     ref={emojiPickerRef}
                     style={{ zIndex: 1000 }}
                   >
-                    <EmojiPicker
-                      onEmojiClick={(emojiData) => insertEmoji(emojiData.emoji)}
-                      theme="dark"
+                    <Suspense fallback={<div className="loading">Loading emoji picker...</div>}>
+                      <EmojiPicker
+                        onEmojiClick={(emojiData) => insertEmoji(emojiData.emoji)}
+                        theme="dark"
                       width={300}
                     />
+                    </Suspense>
                   </div>
                 )}
 
@@ -2884,17 +2889,20 @@ function ChatRoom() {
 
 
       {showCollaborativeEditor && (
-        <CollaborativeEditor
-          roomId={roomId}
-          participants={participants}
+        <Suspense fallback={<div className="loading">Loading editor...</div>}>
+          <CollaborativeEditor
+            roomId={roomId}
+            participants={participants}
           onClose={() => setShowCollaborativeEditor(false)}
-        />
+          />
+        </Suspense>
       )}
 
       {showVideoCall && (
-        <VideoCall
-          roomId={roomId}
-          participants={participants}
+        <Suspense fallback={<div className="loading">Loading video call...</div>}>
+          <VideoCall
+            roomId={roomId}
+            participants={participants}
           onClose={() => {
             setShowVideoCall(false);
             // Notify that video call is no longer active
@@ -2905,6 +2913,7 @@ function ChatRoom() {
             setActiveVideoCall(false);
           }}
         />
+        </Suspense>
       )}
 
       {/* Video Call Notification Popup */}
@@ -2946,32 +2955,38 @@ function ChatRoom() {
       )}
 
       {showMeetingScheduler && (
-        <MeetingScheduler
-          roomId={roomId}
-          participants={participants}
+        <Suspense fallback={<div className="loading">Loading scheduler...</div>}>
+          <MeetingScheduler
+            roomId={roomId}
+            participants={participants}
           onClose={() => setShowMeetingScheduler(false)}
           onMeetingCreated={(meeting) => {
             console.log('Meeting created:', meeting);
             setShowMeetingScheduler(false);
           }}
         />
+        </Suspense>
       )}
 
 
       {isUserAdmin && (
-        <AdminPanel
-          roomId={roomId}
-          onClose={() => setShowAdminPanel(false)}
+        <Suspense fallback={<div className="loading">Loading admin panel...</div>}>
+          <AdminPanel
+            roomId={roomId}
+            onClose={() => setShowAdminPanel(false)}
           isVisible={showAdminPanel}
         />
+        </Suspense>
       )}
       
       {showMeetingsList && (
-        <MeetingsList
-          roomId={roomId}
-          onClose={() => setShowMeetingsList(false)}
+        <Suspense fallback={<div className="loading">Loading meetings...</div>}>
+          <MeetingsList
+            roomId={roomId}
+            onClose={() => setShowMeetingsList(false)}
           isVisible={showMeetingsList}
         />
+        </Suspense>
       )}
     </div>
   );
