@@ -228,6 +228,22 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     safeSocketService.on('user-joined-video', (data) => {
       if (data.roomId === roomId && data.userId !== user?.id) {
         console.log('User joined video call:', data.userId);
+        
+        // Add participant to remoteStreams immediately
+        setRemoteStreams(prev => {
+          const existing = prev.find(s => s.id === data.userId);
+          if (!existing) {
+            return [...prev, {
+              id: data.userId,
+              name: data.username || data.email || `User ${data.userId}`,
+              stream: null, // Will be set when WebRTC connection is established
+              isVideoEnabled: true,
+              isAudioEnabled: true
+            }];
+          }
+          return prev;
+        });
+        
         // Start WebRTC connection with new user
         startWebRTCConnection(data.userId);
       }
@@ -327,6 +343,23 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   const setupWebRTCConnections = () => {
     // Set up WebRTC peer connections for each participant
     const otherParticipants = participants.filter(p => p.userId !== user?.id);
+    
+    // Add participants to remoteStreams immediately (before WebRTC connection)
+    setRemoteStreams(prev => {
+      const newParticipants = otherParticipants.map(participant => ({
+        id: participant.userId,
+        name: participant.username || participant.email || `User ${participant.userId}`,
+        stream: null, // Will be set when WebRTC connection is established
+        isVideoEnabled: true,
+        isAudioEnabled: true
+      }));
+      
+      // Merge with existing participants, avoiding duplicates
+      const existingIds = prev.map(p => p.id);
+      const uniqueNewParticipants = newParticipants.filter(p => !existingIds.includes(p.id));
+      
+      return [...prev, ...uniqueNewParticipants];
+    });
     
     otherParticipants.forEach((participant, index) => {
       startWebRTCConnection(participant.userId, participant);
@@ -688,6 +721,17 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           </div>
         )}
 
+        {/* Debug Info */}
+        <div style={{ padding: '10px', background: '#3c4043', color: '#e8eaed', fontSize: '12px', margin: '10px', borderRadius: '4px' }}>
+          <strong>Video Call Debug:</strong><br/>
+          Room ID: {roomId}<br/>
+          Connection Status: {connectionStatus}<br/>
+          Local Stream: {localStream ? '✅ Active' : '❌ None'}<br/>
+          Remote Participants: {remoteStreams.length}<br/>
+          Participants: {participants.map(p => p.username || p.email).join(', ')}<br/>
+          Remote Streams: {remoteStreams.map(s => `${s.name} (${s.stream ? 'stream' : 'no stream'})`).join(', ')}
+        </div>
+
         {/* Connection Status */}
         {connectionStatus === 'connecting' && (
           <div className="meet-connecting">
@@ -739,8 +783,8 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
               {/* Remote Videos */}
               {remoteStreams.map((participant, index) => (
-                <div key={participant.id} className="video-participant remote-video">
-                  <div className="video-container">
+                <div key={participant.id} className="meet-participant remote-participant">
+                  <div className="meet-video-container">
                     {participant.stream && participant.isVideoEnabled ? (
                       <video
                         ref={el => {
@@ -753,25 +797,30 @@ function VideoCall({ roomId, onClose, participants = [] }) {
                         }}
                         autoPlay
                         playsInline
-                        className="video-element"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        className="meet-video"
                         onLoadedMetadata={() => console.log('Remote video loaded:', participant.name)}
                         onError={(e) => console.error('Remote video error:', participant.name, e)}
                       />
                     ) : (
-                      <div className="video-placeholder">
-                        <div className="user-avatar">
+                      <div className="meet-video-placeholder">
+                        <div className="meet-avatar">
                           {participant.name.charAt(0).toUpperCase()}
                         </div>
-                        <span className="participant-name">{participant.name}</span>
-                        {!participant.stream && <div className="connecting-indicator">Connecting...</div>}
+                        <div className="meet-participant-info">
+                          <span className="meet-participant-name">{participant.name}</span>
+                          {!participant.stream && <div className="meet-connecting">Connecting...</div>}
+                        </div>
                       </div>
                     )}
-                    <div className="video-overlay">
-                      <span className="participant-name">{participant.name}</span>
-                      {!participant.isVideoEnabled && <span className="video-off">📹</span>}
-                      {!participant.isAudioEnabled && <span className="audio-off">🎤</span>}
-                      {participant.stream && <span className="connected-indicator">🟢</span>}
+                    <div className="meet-video-overlay">
+                      <div className="participant-info">
+                        <span className="participant-name">{participant.name}</span>
+                        <div className="participant-status">
+                          {!participant.isVideoEnabled && <span className="status-icon video-off">📹</span>}
+                          {!participant.isAudioEnabled && <span className="status-icon audio-off">🎤</span>}
+                          {participant.stream && <span className="status-icon connected">🟢</span>}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
