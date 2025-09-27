@@ -2,45 +2,26 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import '../styles/components/VideoCall.css';
 
-// Safe socket service import with comprehensive fallback
+// Completely disable socket service to prevent crashes
 let socketService = null;
+let socketServiceAvailable = false;
+
+// Try to import socket service, but if it fails, completely disable it
 try {
   const importedService = require('../services/socketService');
   socketService = importedService.default || importedService;
   
   // Validate that the service has required methods
-  if (!socketService || typeof socketService.on !== 'function' || typeof socketService.emit !== 'function') {
+  if (socketService && typeof socketService.on === 'function' && typeof socketService.emit === 'function') {
+    socketServiceAvailable = true;
+    console.log('Socket service loaded successfully');
+  } else {
     throw new Error('Socket service methods not available');
   }
 } catch (error) {
-  console.error('Failed to import or validate socket service:', error);
-  // Create a comprehensive fallback socket service
-  socketService = {
-    on: (event, callback) => {
-      console.warn(`Socket service not available - cannot listen to event: ${event}`);
-      return false;
-    },
-    emit: (event, data) => {
-      console.warn(`Socket service not available - cannot emit event: ${event}`);
-      return false;
-    },
-    off: (event, callback) => {
-      console.warn(`Socket service not available - cannot remove listener for event: ${event}`);
-      return false;
-    },
-    connect: () => {
-      console.warn('Socket service not available - cannot connect');
-      return false;
-    },
-    disconnect: () => {
-      console.warn('Socket service not available - cannot disconnect');
-      return false;
-    },
-    isConnected: () => {
-      console.warn('Socket service not available - not connected');
-      return false;
-    }
-  };
+  console.error('Socket service not available - disabling video call functionality:', error);
+  socketServiceAvailable = false;
+  socketService = null;
 }
 
 // Additional safety wrapper
@@ -126,6 +107,52 @@ const safeSocketService = {
 };
 
 function VideoCall({ roomId, onClose, participants = [] }) {
+  // Early return if socket service is not available
+  if (!socketServiceAvailable) {
+    return (
+      <div className="video-call-overlay" onClick={onClose}>
+        <div className="video-call-container" onClick={e => e.stopPropagation()}>
+          <div className="video-call-header">
+            <h2>🎥 Video Call - Room {roomId}</h2>
+            <button className="close-btn" onClick={onClose}>×</button>
+          </div>
+          <div className="error-message" style={{
+            background: '#f8d7da',
+            border: '1px solid #f5c6cb',
+            color: '#721c24',
+            padding: '20px',
+            borderRadius: '4px',
+            textAlign: 'center',
+            margin: '20px'
+          }}>
+            <h3>⚠️ Video Call Service Unavailable</h3>
+            <p>The video call service is currently not available. This may be due to:</p>
+            <ul style={{ textAlign: 'left', margin: '10px 0' }}>
+              <li>Network connectivity issues</li>
+              <li>Server maintenance</li>
+              <li>Browser compatibility issues</li>
+            </ul>
+            <p>Please try again later or contact support if the issue persists.</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="btn-primary"
+              style={{ margin: '10px' }}
+            >
+              🔄 Refresh Page
+            </button>
+            <button 
+              onClick={onClose} 
+              className="btn-secondary"
+              style={{ margin: '10px' }}
+            >
+              ❌ Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const { user, isAuthenticated } = useAuth();
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
@@ -135,7 +162,6 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [error, setError] = useState('');
   const [componentError, setComponentError] = useState(null);
-  const [socketServiceAvailable, setSocketServiceAvailable] = useState(false);
   
   const localVideoRef = useRef(null);
   const remoteVideoRefs = useRef([]);
@@ -145,43 +171,14 @@ function VideoCall({ roomId, onClose, participants = [] }) {
   useEffect(() => {
     try {
       if (isAuthenticated) {
-        // Check if socket service is available
-        const isSocketAvailable = safeSocketService && 
-          typeof safeSocketService.on === 'function' && 
-          typeof safeSocketService.emit === 'function';
+        // Socket service is guaranteed to be available at this point
+        console.log('Initializing video call with socket service');
         
-        setSocketServiceAvailable(isSocketAvailable);
+        // Try to connect socket service
+        safeSocketService.connect();
         
-        if (!isSocketAvailable) {
-          console.warn('Socket service not available - running in local-only mode');
-          setError('Video call service is not available. Running in local-only mode.');
-          setConnectionStatus('local-only');
-          initializeVideoCall();
-          return;
-        }
-        
-        // Initialize socket service first
-        try {
-          if (!socketService) {
-            throw new Error('Socket service not available');
-          }
-          
-          // Try to connect socket service
-          safeSocketService.connect();
-          
-          // Check if socket service methods are available
-          if (!safeSocketService.on || !safeSocketService.emit) {
-            throw new Error('Socket service methods not available');
-          }
-            
-            initializeVideoCall();
-            setupSignaling();
-        } catch (error) {
-          console.error('Socket service initialization failed:', error);
-          setError('Video call service is not available. Running in local-only mode.');
-          setConnectionStatus('local-only');
-          initializeVideoCall();
-        }
+        initializeVideoCall();
+        setupSignaling();
       }
     } catch (error) {
       console.error('VideoCall component error:', error);
@@ -191,9 +188,7 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     return () => {
       try {
         cleanup();
-        if (socketServiceAvailable) {
-          cleanupSignaling();
-        }
+        cleanupSignaling();
       } catch (error) {
         console.error('Error during cleanup:', error);
       }
@@ -202,11 +197,8 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
   const setupSignaling = () => {
     try {
-      // Check if socket service is available
-      if (!socketServiceAvailable || !safeSocketService || typeof safeSocketService.on !== 'function') {
-        console.warn('Socket service not available - skipping signaling setup');
-        return;
-      }
+      // Socket service is guaranteed to be available at this point
+      console.log('Setting up WebRTC signaling');
 
       // Listen for incoming WebRTC offers
       safeSocketService.on('webrtc-offer', async (data) => {
@@ -335,18 +327,14 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     });
 
     // Notify other participants that we joined the video call
-    if (socketServiceAvailable) {
-      try {
-        safeSocketService.emit('user-joined-video', {
+    try {
+      safeSocketService.emit('user-joined-video', {
         roomId,
         userId: user?.id,
         username: user?.username || user?.email
       });
     } catch (error) {
       console.error('Failed to emit user-joined-video:', error);
-    }
-    } else {
-      console.warn('Socket service not available - cannot notify other participants');
     }
   };
 
@@ -407,19 +395,15 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       await peerConnection.setLocalDescription(offer);
       
       console.log('Sending offer to:', userId);
-      if (socketServiceAvailable) {
-        try {
-          safeSocketService.emit('webrtc-offer', {
-            roomId,
-            to: userId,
-            from: user?.id,
-            offer: offer
-          });
-        } catch (error) {
-          console.error('Failed to emit WebRTC offer:', error);
-        }
-      } else {
-        console.warn('Socket service not available - cannot send WebRTC offer');
+      try {
+        safeSocketService.emit('webrtc-offer', {
+          roomId,
+          to: userId,
+          from: user?.id,
+          offer: offer
+        });
+      } catch (error) {
+        console.error('Failed to emit WebRTC offer:', error);
       }
     } catch (error) {
       console.error('Error creating offer:', error);
@@ -470,19 +454,15 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
           console.log('Sending ICE candidate to:', userId);
-        if (socketServiceAvailable) {
-          try {
-            safeSocketService.emit('webrtc-ice-candidate', {
-              roomId,
-              to: userId,
-              from: user?.id,
-              candidate: event.candidate
-            });
-          } catch (error) {
-            console.error('Failed to emit ICE candidate:', error);
-          }
-        } else {
-          console.warn('Socket service not available - cannot send ICE candidate');
+        try {
+          safeSocketService.emit('webrtc-ice-candidate', {
+            roomId,
+            to: userId,
+            from: user?.id,
+            candidate: event.candidate
+          });
+        } catch (error) {
+          console.error('Failed to emit ICE candidate:', error);
         }
         }
       };
@@ -496,19 +476,15 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       await peerConnection.setLocalDescription(answer);
       
       console.log('Sending answer to:', userId);
-      if (socketServiceAvailable) {
-        try {
-          safeSocketService.emit('webrtc-answer', {
-            roomId,
-            to: userId,
-            from: user?.id,
-            answer: answer
-          });
-        } catch (error) {
-          console.error('Failed to emit WebRTC answer:', error);
-        }
-      } else {
-        console.warn('Socket service not available - cannot send WebRTC answer');
+      try {
+        safeSocketService.emit('webrtc-answer', {
+          roomId,
+          to: userId,
+          from: user?.id,
+          answer: answer
+        });
+      } catch (error) {
+        console.error('Failed to emit WebRTC answer:', error);
       }
     } catch (error) {
       console.error('Error handling offer:', error);
@@ -605,17 +581,13 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
   const cleanup = () => {
     // Notify other participants that we're leaving
-    if (socketServiceAvailable) {
-      try {
-        safeSocketService.emit('user-left-video', {
-          roomId,
-          userId: user?.id
-        });
-      } catch (error) {
-        console.error('Failed to emit user-left-video:', error);
-      }
-    } else {
-      console.warn('Socket service not available - cannot notify other participants');
+    try {
+      safeSocketService.emit('user-left-video', {
+        roomId,
+        userId: user?.id
+      });
+    } catch (error) {
+      console.error('Failed to emit user-left-video:', error);
     }
 
     if (localStreamRef.current) {
@@ -684,20 +656,6 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         </div>
 
         {error && <div className="error-message">{error}</div>}
-        
-        {!socketServiceAvailable && (
-          <div className="warning-message" style={{
-            background: '#fff3cd',
-            border: '1px solid #ffeaa7',
-            color: '#856404',
-            padding: '10px',
-            borderRadius: '4px',
-            margin: '10px 0',
-            textAlign: 'center'
-          }}>
-            ⚠️ Video call service is not available. Running in local-only mode.
-          </div>
-        )}
 
         {/* Debug Info */}
         <div className="debug-info" style={{ padding: '10px', background: '#f0f0f0', margin: '10px', borderRadius: '4px', fontSize: '12px' }}>
