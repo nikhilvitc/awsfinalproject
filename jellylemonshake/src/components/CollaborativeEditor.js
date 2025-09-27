@@ -33,28 +33,9 @@ function CollaborativeEditor({ roomId, onClose, participants = [] }) {
       loadProjects();
     }
     
-    // Allow scrolling when editor is open
-    document.body.classList.add('editor-open');
-    
-    // Ensure the editor is properly sized for full-screen
-    const handleResize = () => {
-      if (contentRef.current) {
-        // Force a reflow to ensure proper sizing
-        const headerHeight = 80; // Approximate header height
-        const newHeight = window.innerHeight - headerHeight;
-        contentRef.current.style.height = `${newHeight}px`;
-      }
-    };
-    
-    // Set initial height
-    handleResize();
-    
-    window.addEventListener('resize', handleResize);
-    
+    // No body manipulation - allow natural scrolling
     return () => {
       // Clean up when editor is closed
-      document.body.classList.remove('editor-open');
-      window.removeEventListener('resize', handleResize);
     };
   }, [roomId]);
 

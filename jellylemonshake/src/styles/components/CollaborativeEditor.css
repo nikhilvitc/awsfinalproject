@@ -6,60 +6,43 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.9);
-  display: flex;
-  align-items: stretch;
-  justify-content: stretch;
   z-index: 1000;
-  padding: 0;
-  overflow: auto; /* Allow scrolling */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-/* Allow body scrolling when editor is open */
+/* Remove all body restrictions */
 body.editor-open {
-  overflow: auto;
-  position: relative;
+  /* No restrictions - allow normal scrolling */
 }
 
 .collaborative-editor-container {
   background: white;
-  border-radius: 0;
-  box-shadow: none;
   width: 100%;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: visible;
+  display: block;
   position: relative;
 }
 
 .collaborative-editor-content {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
   padding: 20px;
   scroll-behavior: smooth;
-  height: calc(100vh - 80px); /* Account for header */
   position: relative;
   z-index: 1;
-  /* Ensure proper scrolling */
-  overscroll-behavior: contain;
-  /* Fix scroll issues */
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: #ccc transparent;
+  /* Allow natural scrolling */
+  overflow: visible;
+  min-height: calc(100vh - 100px);
 }
 
 /* Responsive design for smaller screens */
 @media (max-width: 1200px) {
   .collaborative-editor-content {
-    height: calc(100vh - 70px);
     padding: 15px;
   }
 }
 
 @media (max-width: 768px) {
   .collaborative-editor-content {
-    height: calc(100vh - 60px);
     padding: 10px;
   }
 }
