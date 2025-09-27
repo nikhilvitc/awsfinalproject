@@ -246,9 +246,20 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       safeSocketService.on('webrtc-offer', async (data) => {
         console.log('📥 WebRTC offer received:', data);
         console.log('📥 Offer details - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
+        console.log('📥 Offer type:', data.offer?.type, 'SDP length:', data.offer?.sdp?.length);
+        console.log('📥 Current remote streams:', remoteStreams.length);
+        console.log('📥 Current participants:', participants.length);
+        
         if (data.roomId === roomId && data.from !== user?.id) {
           console.log('✅ Processing WebRTC offer from:', data.from);
-          await handleIncomingOffer(data);
+          console.log('✅ Starting handleIncomingOffer...');
+          try {
+            await handleIncomingOffer(data);
+            console.log('✅ handleIncomingOffer completed successfully');
+          } catch (error) {
+            console.error('❌ handleIncomingOffer failed:', error);
+            console.error('❌ Error details:', error.message, error.stack);
+          }
         } else {
           console.log('❌ Ignoring offer - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
         }
@@ -257,9 +268,20 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     // Listen for incoming WebRTC answers
     safeSocketService.on('webrtc-answer', async (data) => {
       console.log('📥 WebRTC answer received:', data);
+      console.log('📥 Answer details - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
+      console.log('📥 Answer type:', data.answer?.type, 'SDP length:', data.answer?.sdp?.length);
+      console.log('📥 Peer connection exists:', !!peerConnections.current[data.from]);
+      
       if (data.roomId === roomId && data.from !== user?.id) {
         console.log('✅ Processing WebRTC answer from:', data.from);
-        await handleIncomingAnswer(data);
+        console.log('✅ Starting handleIncomingAnswer...');
+        try {
+          await handleIncomingAnswer(data);
+          console.log('✅ handleIncomingAnswer completed successfully');
+        } catch (error) {
+          console.error('❌ handleIncomingAnswer failed:', error);
+          console.error('❌ Error details:', error.message, error.stack);
+        }
       } else {
         console.log('❌ Ignoring answer - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
       }
@@ -268,9 +290,20 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     // Listen for ICE candidates
     safeSocketService.on('webrtc-ice-candidate', async (data) => {
       console.log('📥 ICE candidate received:', data);
+      console.log('📥 ICE details - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
+      console.log('📥 ICE candidate:', data.candidate?.candidate, 'type:', data.candidate?.type);
+      console.log('📥 Peer connection exists:', !!peerConnections.current[data.from]);
+      
       if (data.roomId === roomId && data.from !== user?.id) {
         console.log('✅ Processing ICE candidate from:', data.from);
-        await handleIncomingIceCandidate(data);
+        console.log('✅ Starting handleIncomingIceCandidate...');
+        try {
+          await handleIncomingIceCandidate(data);
+          console.log('✅ handleIncomingIceCandidate completed successfully');
+        } catch (error) {
+          console.error('❌ handleIncomingIceCandidate failed:', error);
+          console.error('❌ Error details:', error.message, error.stack);
+        }
       } else {
         console.log('❌ Ignoring ICE candidate - roomId:', data.roomId, 'expected:', roomId, 'from:', data.from, 'user:', user?.id);
       }
@@ -1051,6 +1084,39 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               }}
             >
               🔄 Manual Recovery
+            </button>
+            <button 
+              onClick={() => {
+                console.log('🧪 Testing WebRTC Signaling Flow...');
+                console.log('🧪 Current participants:', participants);
+                console.log('🧪 Current remote streams:', remoteStreams);
+                console.log('🧪 Peer connections:', Object.keys(peerConnections.current));
+                console.log('🧪 Socket connected:', safeSocketService.isConnected());
+                console.log('🧪 Local stream:', !!localStreamRef.current);
+                console.log('🧪 Local stream tracks:', localStreamRef.current?.getTracks().length);
+                
+                // Test if we can create a peer connection
+                try {
+                  const testPC = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                  });
+                  console.log('🧪 Test peer connection created successfully');
+                  testPC.close();
+                  console.log('🧪 Test peer connection closed');
+                } catch (error) {
+                  console.error('🧪 Test peer connection failed:', error);
+                }
+              }}
+              style={{ 
+                padding: '5px 10px', 
+                background: '#673ab7', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              🧪 Test Signaling
             </button>
           </div>
         </div>
