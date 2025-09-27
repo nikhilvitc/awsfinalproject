@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  padding: 10px;
   overflow: hidden; /* Prevent background scrolling */
 }
 
@@ -28,8 +28,8 @@ body.editor-open {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   width: 100%;
   max-width: 1400px;
-  height: 90vh;
-  max-height: 90vh;
+  height: 95vh;
+  max-height: 95vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -42,8 +42,8 @@ body.editor-open {
   overflow-x: hidden;
   padding: 20px;
   scroll-behavior: smooth;
-  max-height: calc(90vh - 120px); /* Account for header and padding */
-  min-height: 400px;
+  max-height: calc(95vh - 120px); /* Account for header and padding */
+  min-height: 500px;
   position: relative;
   z-index: 1;
   /* Ensure proper scrolling */
@@ -52,6 +52,36 @@ body.editor-open {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #ccc transparent;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 1200px) {
+  .collaborative-editor-container {
+    height: 98vh;
+    max-height: 98vh;
+  }
+  
+  .collaborative-editor-content {
+    max-height: calc(98vh - 100px);
+    padding: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .collaborative-editor-overlay {
+    padding: 5px;
+  }
+  
+  .collaborative-editor-container {
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  
+  .collaborative-editor-content {
+    max-height: calc(100vh - 80px);
+    padding: 10px;
+  }
 }
 
 /* Custom scrollbar for collaborative editor */

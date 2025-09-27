@@ -36,9 +36,25 @@ function CollaborativeEditor({ roomId, onClose, participants = [] }) {
     // Prevent background scrolling when editor is open
     document.body.classList.add('editor-open');
     
+    // Ensure the editor is properly sized
+    const handleResize = () => {
+      if (contentRef.current) {
+        // Force a reflow to ensure proper sizing
+        contentRef.current.style.height = 'auto';
+        setTimeout(() => {
+          if (contentRef.current) {
+            contentRef.current.style.height = '';
+          }
+        }, 100);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
     return () => {
       // Re-enable background scrolling when editor is closed
       document.body.classList.remove('editor-open');
+      window.removeEventListener('resize', handleResize);
     };
   }, [roomId]);
 
