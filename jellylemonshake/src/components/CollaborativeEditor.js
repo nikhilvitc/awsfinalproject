@@ -4,7 +4,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import '../styles/components/CollaborativeEditor.css';
 
-function CollaborativeEditor({ roomId, onClose }) {
+function CollaborativeEditor({ roomId, onClose, participants = [] }) {
   const { user, isAuthenticated } = useAuth();
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
@@ -102,7 +102,11 @@ function CollaborativeEditor({ roomId, onClose }) {
           description: `Collaborative project for room ${roomId}`,
           roomId,
           createdBy: user?.email || user?.username,
-          projectType: 'react'
+          projectType: 'react',
+          roomMembers: participants.map(p => ({
+            username: p.username,
+            email: p.email || p.username
+          }))
         })
       });
 

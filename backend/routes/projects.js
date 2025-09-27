@@ -5,6 +5,31 @@ const Project = require('../models/Project');
 const ProjectFile = require('../models/ProjectFile');
 const path = require('path');
 
+// Helper function to check and add collaborator if needed
+async function ensureCollaborator(project, userId) {
+  const isCollaborator = project.collaborators.some(collab => 
+    collab.userId === userId || collab.email === userId
+  );
+
+  if (!isCollaborator) {
+    console.log(`Adding user ${userId} as collaborator to project ${project.projectId}`);
+    
+    // Add user as collaborator
+    project.collaborators.push({
+      userId: userId,
+      username: userId,
+      email: userId,
+      role: 'editor',
+      joinedAt: new Date()
+    });
+    
+    await project.save();
+    return true; // User was added as collaborator
+  }
+  
+  return false; // User was already a collaborator
+}
+
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -28,7 +53,7 @@ const upload = multer({
 // Create a new project
 router.post('/create', async (req, res) => {
   try {
-    const { name, description, roomId, createdBy, projectType = 'react' } = req.body;
+    const { name, description, roomId, createdBy, projectType = 'react', roomMembers = [] } = req.body;
 
     if (!name || !roomId || !createdBy) {
       return res.status(400).json({
@@ -39,6 +64,29 @@ router.post('/create', async (req, res) => {
 
     const projectId = `proj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // Start with creator as owner
+    const collaborators = [{
+      userId: createdBy,
+      username: createdBy,
+      email: createdBy,
+      role: 'owner'
+    }];
+
+    // Add room members as editors if provided
+    if (roomMembers && roomMembers.length > 0) {
+      roomMembers.forEach(member => {
+        if (member.username !== createdBy) { // Don't add creator twice
+          collaborators.push({
+            userId: member.username || member.email,
+            username: member.username || member.email,
+            email: member.email || member.username,
+            role: 'editor',
+            joinedAt: new Date()
+          });
+        }
+      });
+    }
+
     const project = new Project({
       projectId,
       name,
@@ -46,12 +94,7 @@ router.post('/create', async (req, res) => {
       roomId,
       createdBy,
       projectType,
-      collaborators: [{
-        userId: createdBy,
-        username: createdBy,
-        email: createdBy,
-        role: 'owner'
-      }]
+      collaborators
     });
 
     const savedProject = await project.save();
@@ -151,16 +194,8 @@ router.post('/:projectId/files/paste', async (req, res) => {
       });
     }
 
-    const isCollaborator = project.collaborators.some(collab => 
-      collab.userId === uploadedBy || collab.email === uploadedBy
-    );
-
-    if (!isCollaborator) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to add files to this project'
-      });
-    }
+    // Ensure user is a collaborator (add if not)
+    await ensureCollaborator(project, uploadedBy);
 
     const projectFile = new ProjectFile({
       projectId,
@@ -216,16 +251,8 @@ router.post('/:projectId/files/upload', upload.single('file'), async (req, res) 
       });
     }
 
-    const isCollaborator = project.collaborators.some(collab => 
-      collab.userId === uploadedBy || collab.email === uploadedBy
-    );
-
-    if (!isCollaborator) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to upload files to this project'
-      });
-    }
+    // Ensure user is a collaborator (add if not)
+    await ensureCollaborator(project, uploadedBy);
 
     const fileExt = path.extname(req.file.originalname).toLowerCase();
     const fileType = getFileType(fileExt);
@@ -284,16 +311,8 @@ router.put('/:projectId/files/:fileId', async (req, res) => {
       });
     }
 
-    const isCollaborator = project.collaborators.some(collab => 
-      collab.userId === lastModifiedBy || collab.email === lastModifiedBy
-    );
-
-    if (!isCollaborator) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to edit files in this project'
-      });
-    }
+    // Ensure user is a collaborator (add if not)
+    await ensureCollaborator(project, lastModifiedBy);
 
     const updatedFile = await ProjectFile.findOneAndUpdate(
       { _id: fileId, projectId },

@@ -2783,6 +2783,7 @@ function ChatRoom() {
       {showCollaborativeEditor && (
         <CollaborativeEditor
           roomId={roomId}
+          participants={participants}
           onClose={() => setShowCollaborativeEditor(false)}
         />
       )}
