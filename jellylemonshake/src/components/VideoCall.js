@@ -177,8 +177,11 @@ function VideoCall({ roomId, onClose, participants = [] }) {
         // Try to connect socket service
         safeSocketService.connect();
         
-        initializeVideoCall();
-        setupSignaling();
+        // Add a small delay to ensure DOM is ready
+        setTimeout(() => {
+          initializeVideoCall();
+          setupSignaling();
+        }, 100);
       }
     } catch (error) {
       console.error('VideoCall component error:', error);
@@ -291,6 +294,25 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     }
   }, [localStream]);
 
+  // Additional effect to handle video element availability
+  useEffect(() => {
+    const checkVideoElement = () => {
+      if (localStream && localVideoRef.current && !localVideoRef.current.srcObject) {
+        console.log('Video element available, setting stream');
+        localVideoRef.current.srcObject = localStream;
+        localVideoRef.current.play();
+      }
+    };
+
+    // Check immediately
+    checkVideoElement();
+
+    // Also check after a short delay
+    const timeoutId = setTimeout(checkVideoElement, 200);
+
+    return () => clearTimeout(timeoutId);
+  }, [localStream]);
+
   const initializeVideoCall = async () => {
     try {
       setConnectionStatus('connecting');
@@ -314,16 +336,20 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       localStreamRef.current = stream;
       setLocalStream(stream);
       
-      // Wait for video element to be ready
-      const setVideoStream = () => {
+      // Set video stream with retry mechanism and timeout
+      const setVideoStream = (retryCount = 0) => {
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
           localVideoRef.current.play();
           console.log('Local video stream set:', stream);
           console.log('Video element:', localVideoRef.current);
+        } else if (retryCount < 50) { // Max 5 seconds of retries
+          console.warn(`Video element not ready, retrying in 100ms... (attempt ${retryCount + 1}/50)`);
+          setTimeout(() => setVideoStream(retryCount + 1), 100);
         } else {
-          console.warn('Video element not ready, retrying in 100ms...');
-          setTimeout(setVideoStream, 100);
+          console.error('Video element not ready after 5 seconds, giving up');
+          setError('Video element failed to initialize. Please refresh and try again.');
+          setConnectionStatus('error');
         }
       };
       
@@ -736,9 +762,30 @@ function VideoCall({ roomId, onClose, participants = [] }) {
           Room ID: {roomId}<br/>
           Connection Status: {connectionStatus}<br/>
           Local Stream: {localStream ? '✅ Active' : '❌ None'}<br/>
+          Video Element: {localVideoRef.current ? '✅ Ready' : '❌ Not Ready'}<br/>
           Remote Participants: {remoteStreams.length}<br/>
           Participants: {participants.map(p => p.username || p.email).join(', ')}<br/>
-          Remote Streams: {remoteStreams.map(s => `${s.name} (${s.connectionStatus || 'unknown'})`).join(', ')}
+          Remote Streams: {remoteStreams.map(s => `${s.name} (${s.connectionStatus || 'unknown'})`).join(', ')}<br/>
+          <button 
+            onClick={() => {
+              if (localStream && localVideoRef.current) {
+                localVideoRef.current.srcObject = localStream;
+                localVideoRef.current.play();
+                console.log('Manually set video stream');
+              }
+            }}
+            style={{ 
+              marginTop: '5px', 
+              padding: '5px 10px', 
+              background: '#4285f4', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            🔄 Retry Video
+          </button>
         </div>
 
         {/* Connection Status */}
