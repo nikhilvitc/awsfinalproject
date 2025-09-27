@@ -739,29 +739,52 @@ function VideoCall({ roomId, onClose, participants = [] }) {
 
     peerConnections.current[userId] = peerConnection;
 
-    // Set up connection timeout with retry mechanism
+    // Set up connection timeout with multiple retry strategies
     const connectionTimeout = setTimeout(() => {
       if (peerConnection.connectionState !== 'connected' && peerConnection.connectionState !== 'completed') {
         console.log(`⏰ Connection timeout for ${userId}, current state: ${peerConnection.connectionState}`);
-        console.log(`🔄 Attempting connection retry for ${userId}`);
+        console.log(`🔄 Attempting multiple retry strategies for ${userId}`);
         
-        // Try to restart the connection
+        // Strategy 1: Restart ICE
+        console.log(`🔄 Strategy 1: Restarting ICE for ${userId}`);
+        try {
+          peerConnection.restartIce();
+        } catch (error) {
+          console.error('❌ ICE restart failed:', error);
+        }
+        
+        // Strategy 2: Close and retry connection
         setTimeout(() => {
           if (peerConnections.current[userId]) {
-            console.log(`🔄 Retrying connection for ${userId}`);
+            console.log(`🔄 Strategy 2: Closing and retrying connection for ${userId}`);
             peerConnections.current[userId].close();
             delete peerConnections.current[userId];
             
             // Retry the connection
             setTimeout(() => {
+              console.log(`🔄 Strategy 2: Retrying connection for ${userId}`);
               startWebRTCConnection(userId, participant);
             }, 1000);
           }
-        }, 2000);
+        }, 3000);
+        
+        // Strategy 3: Force re-emit user-joined-video
+        setTimeout(() => {
+          console.log(`🔄 Strategy 3: Re-emitting user-joined-video for ${userId}`);
+          try {
+            safeSocketService.emit('user-joined-video', {
+              roomId,
+              userId: user?.id,
+              username: user?.username || user?.email
+            });
+          } catch (error) {
+            console.error('❌ Re-emit failed:', error);
+          }
+        }, 5000);
         
         setRemoteStreams(prev => prev.map(s => s.id === userId ? { ...s, connectionStatus: 'retrying' } : s));
       }
-    }, 15000); // 15 second timeout
+    }, 20000); // 20 second timeout
 
     // Clear timeout when connection succeeds
     const originalOnTrack = peerConnection.ontrack;
@@ -770,32 +793,43 @@ function VideoCall({ roomId, onClose, participants = [] }) {
       if (originalOnTrack) originalOnTrack(event);
     };
 
-    // Create and send offer
+    // Create and send offer with enhanced configuration
     try {
       console.log('📤 Creating offer for:', userId);
-      const offer = await peerConnection.createOffer();
+      const offer = await peerConnection.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+        voiceActivityDetection: true
+      });
       console.log('📤 Offer created:', offer);
+      
+      // Set local description with enhanced configuration
       await peerConnection.setLocalDescription(offer);
       console.log('📤 Local description set');
       
       console.log('📤 Sending offer to:', userId, 'Offer type:', offer.type, 'SDP length:', offer.sdp?.length);
-      try {
-        const emitResult = safeSocketService.emit('webrtc-offer', {
-          roomId,
-          to: userId,
-          from: user?.id,
-          offer: offer
-        });
-        console.log('📤 Offer emit result:', emitResult);
-        console.log('📤 Offer data sent:', {
-          roomId,
-          to: userId,
-          from: user?.id,
-          offerType: offer.type
-        });
-      } catch (error) {
-        console.error('❌ Failed to emit WebRTC offer:', error);
-      }
+      
+      // Add a small delay to ensure local description is fully set
+      setTimeout(() => {
+        try {
+          const emitResult = safeSocketService.emit('webrtc-offer', {
+            roomId,
+            to: userId,
+            from: user?.id,
+            offer: offer
+          });
+          console.log('📤 Offer emit result:', emitResult);
+          console.log('📤 Offer data sent:', {
+            roomId,
+            to: userId,
+            from: user?.id,
+            offerType: offer.type
+          });
+        } catch (error) {
+          console.error('❌ Failed to emit WebRTC offer:', error);
+        }
+      }, 100);
+      
     } catch (error) {
       console.error('❌ Error creating offer:', error);
     }
@@ -902,23 +936,35 @@ function VideoCall({ roomId, onClose, participants = [] }) {
     }
 
     try {
+      console.log('📥 Setting remote description for offer from:', userId);
       await peerConnection.setRemoteDescription(data.offer);
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
+      console.log('📥 Remote description set successfully');
       
-      console.log('Sending answer to:', userId);
+      console.log('📥 Creating answer for:', userId);
+      const answer = await peerConnection.createAnswer({
+        voiceActivityDetection: true
+      });
+      console.log('📥 Answer created:', answer);
+      
+      console.log('📥 Setting local description for answer');
+      await peerConnection.setLocalDescription(answer);
+      console.log('📥 Local description set successfully');
+      
+      console.log('📤 Sending answer to:', userId);
       try {
-        safeSocketService.emit('webrtc-answer', {
+        const emitResult = safeSocketService.emit('webrtc-answer', {
           roomId,
           to: userId,
           from: user?.id,
           answer: answer
         });
+        console.log('📤 Answer emit result:', emitResult);
       } catch (error) {
-        console.error('Failed to emit WebRTC answer:', error);
+        console.error('❌ Failed to emit WebRTC answer:', error);
       }
     } catch (error) {
-      console.error('Error handling offer:', error);
+      console.error('❌ Error handling offer:', error);
+      console.error('❌ Error details:', error.message, error.stack);
     }
   };
 
@@ -1348,6 +1394,46 @@ function VideoCall({ roomId, onClose, participants = [] }) {
               }}
             >
               🔄 Restart All
+            </button>
+            <button 
+              onClick={() => {
+                console.log('🧪 Direct Connection Test - Testing WebRTC with minimal configuration...');
+                
+                // Test with a simple peer connection
+                const testPC = new RTCPeerConnection({
+                  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+                
+                // Add local stream
+                if (localStreamRef.current) {
+                  localStreamRef.current.getTracks().forEach(track => {
+                    testPC.addTrack(track, localStreamRef.current);
+                  });
+                }
+                
+                // Test offer creation
+                testPC.createOffer().then(offer => {
+                  console.log('🧪 Test offer created successfully:', offer.type);
+                  return testPC.setLocalDescription(offer);
+                }).then(() => {
+                  console.log('🧪 Test local description set successfully');
+                  testPC.close();
+                  console.log('🧪 Direct connection test completed');
+                }).catch(error => {
+                  console.error('🧪 Direct connection test failed:', error);
+                  testPC.close();
+                });
+              }}
+              style={{ 
+                padding: '5px 10px', 
+                background: '#9c27b0', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              🧪 Direct Test
             </button>
           </div>
         </div>
