@@ -64,10 +64,23 @@ function CollaborativeEditor({ roomId, onClose, participants = [] }) {
 
     const contentElement = contentRef.current;
     if (contentElement) {
-      contentElement.addEventListener('scroll', handleScroll);
+      // Use passive event listener for better performance
+      contentElement.addEventListener('scroll', handleScroll, { passive: true });
       return () => contentElement.removeEventListener('scroll', handleScroll);
     }
   }, [selectedProject, files]);
+
+  // Fix scroll position when content changes
+  useEffect(() => {
+    if (contentRef.current && selectedFile) {
+      // Small delay to ensure content is rendered
+      setTimeout(() => {
+        if (contentRef.current) {
+          contentRef.current.scrollTop = 0;
+        }
+      }, 100);
+    }
+  }, [selectedFile]);
 
   const loadProjects = async () => {
     try {

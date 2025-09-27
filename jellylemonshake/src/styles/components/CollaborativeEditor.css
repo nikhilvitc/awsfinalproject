@@ -19,6 +19,7 @@ body.editor-open {
   overflow: hidden;
   position: fixed;
   width: 100%;
+  height: 100%;
 }
 
 .collaborative-editor-container {
@@ -47,6 +48,10 @@ body.editor-open {
   z-index: 1;
   /* Ensure proper scrolling */
   overscroll-behavior: contain;
+  /* Fix scroll issues */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
 }
 
 /* Custom scrollbar for collaborative editor */
