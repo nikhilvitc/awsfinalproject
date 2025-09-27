@@ -278,9 +278,10 @@ function MeetingScheduler({ roomId, participants, onClose, onMeetingCreated }) {
                 <div className="no-participants">No other participants in this room</div>
               ) : (
                 participants.filter(p => p.username !== (user.username || user.email)).map(participant => (
-                  <label key={participant.username} className="participant-checkbox">
+                  <label key={participant.username} className="participant-checkbox" htmlFor={`participant-${participant.username}`}>
                     <input
                       type="checkbox"
+                      id={`participant-${participant.username}`}
                       checked={formData.selectedParticipants.includes(participant.username)}
                       onChange={() => handleParticipantToggle(participant.username)}
                     />
@@ -293,9 +294,10 @@ function MeetingScheduler({ roomId, participants, onClose, onMeetingCreated }) {
           </div>
 
           <div className="form-group">
-            <label className="checkbox-label">
+            <label className="checkbox-label" htmlFor="isRecurring">
               <input
                 type="checkbox"
+                id="isRecurring"
                 name="isRecurring"
                 checked={formData.isRecurring}
                 onChange={handleInputChange}
@@ -353,9 +355,10 @@ function MeetingScheduler({ roomId, participants, onClose, onMeetingCreated }) {
             <h3>Meeting Settings</h3>
             
             <div className="settings-row">
-              <label className="checkbox-label">
+              <label className="checkbox-label" htmlFor="allowScreenShare">
                 <input
                   type="checkbox"
+                  id="allowScreenShare"
                   name="allowScreenShare"
                   checked={formData.allowScreenShare}
                   onChange={handleInputChange}
@@ -363,9 +366,10 @@ function MeetingScheduler({ roomId, participants, onClose, onMeetingCreated }) {
                 Allow Screen Sharing
               </label>
 
-              <label className="checkbox-label">
+              <label className="checkbox-label" htmlFor="allowChat">
                 <input
                   type="checkbox"
+                  id="allowChat"
                   name="allowChat"
                   checked={formData.allowChat}
                   onChange={handleInputChange}
@@ -375,9 +379,10 @@ function MeetingScheduler({ roomId, participants, onClose, onMeetingCreated }) {
             </div>
 
             <div className="form-group">
-              <label className="checkbox-label">
+              <label className="checkbox-label" htmlFor="requirePassword">
                 <input
                   type="checkbox"
+                  id="requirePassword"
                   name="requirePassword"
                   checked={formData.requirePassword}
                   onChange={handleInputChange}
