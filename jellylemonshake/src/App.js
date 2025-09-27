@@ -9,16 +9,24 @@ import { AnimatePresence } from "framer-motion";
 import { motion } from "framer-motion";
 import { AuthProvider } from "./components/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
-import Home from "./components/Home";
-import ChatRoom from "./components/ChatRoom";
-import RoomJoin from "./components/RoomJoin";
-import MeetingRoom from "./components/MeetingRoom";
-import NotFound from "./components/NotFound";
-import { Login, Register } from "./components/Auth"; // Combined auth components
-import UserProfile from "./components/UserProfile";
-import Navbar from "./components/Navbar";
-import ForgotPassword from "./components/ForgotPassword";
 import "./styles/App.css"; // Updated CSS import path
+
+// Lazy load components to avoid circular dependencies
+import { lazy, Suspense } from "react";
+
+const Home = lazy(() => import("./components/Home"));
+const ChatRoom = lazy(() => import("./components/ChatRoom"));
+const RoomJoin = lazy(() => import("./components/RoomJoin"));
+const MeetingRoom = lazy(() => import("./components/MeetingRoom"));
+const NotFound = lazy(() => import("./components/NotFound"));
+const UserProfile = lazy(() => import("./components/UserProfile"));
+const Navbar = lazy(() => import("./components/Navbar"));
+const ForgotPassword = lazy(() => import("./components/ForgotPassword"));
+
+// Auth components
+const Auth = lazy(() => import("./components/Auth"));
+const Login = lazy(() => import("./components/Auth").then(module => ({ default: module.Login })));
+const Register = lazy(() => import("./components/Auth").then(module => ({ default: module.Register })));
 
 // Wrap each page with this component
 const AnimatedPage = ({ children }) => {
@@ -70,9 +78,13 @@ function AnimatedRoutes() {
           path="/"
           element={
             <>
-              <Navbar />
+              <Suspense fallback={<div className="loading">Loading...</div>}>
+                <Navbar />
+              </Suspense>
               <AnimatedPage>
-                <Home />
+                <Suspense fallback={<div className="loading">Loading...</div>}>
+                  <Home />
+                </Suspense>
               </AnimatedPage>
             </>
           }
@@ -82,10 +94,14 @@ function AnimatedRoutes() {
           path="/login"
           element={
             <>
-              <Navbar />
+              <Suspense fallback={<div className="loading">Loading...</div>}>
+                <Navbar />
+              </Suspense>
               <AnimatedPage>
                 <div className="content-container">
-                  <Login />
+                  <Suspense fallback={<div className="loading">Loading...</div>}>
+                    <Login />
+                  </Suspense>
                 </div>
               </AnimatedPage>
             </>
@@ -96,10 +112,14 @@ function AnimatedRoutes() {
           path="/register"
           element={
             <>
-              <Navbar />
+              <Suspense fallback={<div className="loading">Loading...</div>}>
+                <Navbar />
+              </Suspense>
               <AnimatedPage>
                 <div className="content-container">
-                  <Register />
+                  <Suspense fallback={<div className="loading">Loading...</div>}>
+                    <Register />
+                  </Suspense>
                 </div>
               </AnimatedPage>
             </>
@@ -110,10 +130,14 @@ function AnimatedRoutes() {
           path="/forgot-password"
           element={
             <>
-              <Navbar />
+              <Suspense fallback={<div className="loading">Loading...</div>}>
+                <Navbar />
+              </Suspense>
               <AnimatedPage>
                 <div className="content-container">
-                  <ForgotPassword />
+                  <Suspense fallback={<div className="loading">Loading...</div>}>
+                    <ForgotPassword />
+                  </Suspense>
                 </div>
               </AnimatedPage>
             </>
@@ -124,10 +148,14 @@ function AnimatedRoutes() {
           path="/profile"
           element={
             <>
-              <Navbar />
+              <Suspense fallback={<div className="loading">Loading...</div>}>
+                <Navbar />
+              </Suspense>
               <AnimatedPage>
                 <div className="content-container">
-                  <UserProfile />
+                  <Suspense fallback={<div className="loading">Loading...</div>}>
+                    <UserProfile />
+                  </Suspense>
                 </div>
               </AnimatedPage>
             </>
@@ -138,10 +166,14 @@ function AnimatedRoutes() {
           path="/join"
           element={
             <>
-              <Navbar />
+              <Suspense fallback={<div className="loading">Loading...</div>}>
+                <Navbar />
+              </Suspense>
               <AnimatedPage>
                 <div className="content-container">
-                  <RoomJoin />
+                  <Suspense fallback={<div className="loading">Loading...</div>}>
+                    <RoomJoin />
+                  </Suspense>
                 </div>
               </AnimatedPage>
             </>
@@ -149,14 +181,26 @@ function AnimatedRoutes() {
         />
 
         {/* Room route without AnimatedPage wrapper for instant room changes */}
-        <Route path="/room/:roomId" element={<RoomPage />} />
+        <Route path="/room/:roomId" element={
+          <Suspense fallback={<div className="loading">Loading...</div>}>
+            <RoomPage />
+          </Suspense>
+        } />
 
         {/* Meeting route */}
-        <Route path="/meet/:meetingId" element={<MeetingRoom />} />
+        <Route path="/meet/:meetingId" element={
+          <Suspense fallback={<div className="loading">Loading...</div>}>
+            <MeetingRoom />
+          </Suspense>
+        } />
 
         <Route
           path="*"
-          element={<NotFound />}
+          element={
+            <Suspense fallback={<div className="loading">Loading...</div>}>
+              <NotFound />
+            </Suspense>
+          }
         />
       </Routes>
     </AnimatePresence>
