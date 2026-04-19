@@ -29,4 +29,4 @@ services:
       - key: REACT_APP_SUPABASE_URL
         value: https://ocipugzffqkfvavmxzod.supabase.co
       - key: REACT_APP_SUPABASE_ANON_KEY
-        sync: false
+        value: sb_publishable_Rj7rrVb0fjtxsG06ok3kLQ_dLZEfiXA
