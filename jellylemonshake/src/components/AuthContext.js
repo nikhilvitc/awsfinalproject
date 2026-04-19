@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase, isSupabaseConfigured } from '../supabaseClient';
 
 const AuthContext = createContext();
 
@@ -35,6 +35,19 @@ export function AuthProvider({ children }) {
     let isMounted = true;
 
     const initializeAuth = async () => {
+      if (!isSupabaseConfigured || !supabase) {
+        const guest = localStorage.getItem('guestUser');
+        if (guest) {
+          setUser(JSON.parse(guest));
+        } else {
+          const guestUser = createGuestUser();
+          localStorage.setItem('guestUser', JSON.stringify(guestUser));
+          setUser(guestUser);
+        }
+        setLoading(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!isMounted) {
@@ -59,6 +72,12 @@ export function AuthProvider({ children }) {
 
     initializeAuth();
 
+    if (!isSupabaseConfigured || !supabase) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(normalizeSupabaseUser(session.user));
@@ -77,6 +96,10 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { success: false, error: 'Login is unavailable: Supabase is not configured.' };
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       return { success: false, error: error.message };
@@ -92,6 +115,10 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (name, email, password) => {
+    if (!isSupabaseConfigured || !supabase) {
+      return { success: false, error: 'Registration is unavailable: Supabase is not configured.' };
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -120,7 +147,9 @@ export function AuthProvider({ children }) {
   const signup = register;
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    if (isSupabaseConfigured && supabase) {
+      await supabase.auth.signOut();
+    }
     const guestUser = createGuestUser();
     localStorage.setItem('guestUser', JSON.stringify(guestUser));
     setUser(guestUser);
