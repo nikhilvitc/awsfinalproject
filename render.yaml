@@ -3,8 +3,10 @@ services:
     name: chatroom-backend
     env: node
     plan: free
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
     envVars:
       - key: NODE_ENV
         value: production
@@ -14,3 +16,13 @@ services:
         sync: false
       - key: JDOODLE_CLIENT_SECRET
         sync: false 
+
+  - type: static
+    name: awsproject-frontend
+    rootDir: jellylemonshake
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    pullRequestPreviewsEnabled: false
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://awsproject-backend.onrender.com/api
