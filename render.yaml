@@ -9,7 +9,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: MONGODB_URI
-        sync: false
+        value: mongodb+srv://awsproject:awsproject@awsproject.fvreojm.mongodb.net/?appName=awsproject
       - key: JDOODLE_CLIENT_ID
         sync: false
       - key: JDOODLE_CLIENT_SECRET

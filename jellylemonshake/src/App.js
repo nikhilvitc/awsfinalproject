@@ -5,8 +5,6 @@ import {
   Route,
   useLocation,
 } from "react-router-dom";
-import { AnimatePresence } from "motion/react";
-import { motion } from "motion/react";
 import { AuthProvider } from "./components/AuthContext";
 import Home from "./components/Home";
 import ChatRoom from "./components/ChatRoom";
@@ -19,14 +17,9 @@ import "./styles/App.css"; // Updated CSS import path
 // Wrap each page with this component
 const AnimatedPage = ({ children }) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div>
       {children}
-    </motion.div>
+    </div>
   );
 };
 
@@ -59,95 +52,93 @@ function AnimatedRoutes() {
   }, [location.pathname, prevPathname]);
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={animationKey}>
-        {/* Pages WITH Navbar */}
-        <Route
-          path="/"
-          element={
-            <>
-              <Navbar />
-              <AnimatedPage>
-                <Home />
-              </AnimatedPage>
-            </>
-          }
-        />
+    <Routes location={location} key={animationKey}>
+      {/* Pages WITH Navbar */}
+      <Route
+        path="/"
+        element={
+          <>
+            <Navbar />
+            <AnimatedPage>
+              <Home />
+            </AnimatedPage>
+          </>
+        }
+      />
 
-        <Route
-          path="/login"
-          element={
-            <>
-              <Navbar />
-              <AnimatedPage>
-                <div className="content-container">
-                  <Login />
-                </div>
-              </AnimatedPage>
-            </>
-          }
-        />
+      <Route
+        path="/login"
+        element={
+          <>
+            <Navbar />
+            <AnimatedPage>
+              <div className="content-container">
+                <Login />
+              </div>
+            </AnimatedPage>
+          </>
+        }
+      />
 
-        <Route
-          path="/register"
-          element={
-            <>
-              <Navbar />
-              <AnimatedPage>
-                <div className="content-container">
-                  <Register />
-                </div>
-              </AnimatedPage>
-            </>
-          }
-        />
+      <Route
+        path="/register"
+        element={
+          <>
+            <Navbar />
+            <AnimatedPage>
+              <div className="content-container">
+                <Register />
+              </div>
+            </AnimatedPage>
+          </>
+        }
+      />
 
-        <Route
-          path="/forgot-password"
-          element={
-            <>
-              <Navbar />
-              <AnimatedPage>
-                <div className="content-container">
-                  <ForgotPassword />
-                </div>
-              </AnimatedPage>
-            </>
-          }
-        />
+      <Route
+        path="/forgot-password"
+        element={
+          <>
+            <Navbar />
+            <AnimatedPage>
+              <div className="content-container">
+                <ForgotPassword />
+              </div>
+            </AnimatedPage>
+          </>
+        }
+      />
 
-        <Route
-          path="/profile"
-          element={
-            <>
-              <Navbar />
-              <AnimatedPage>
-                <div className="content-container">
-                  <UserProfile />
-                </div>
-              </AnimatedPage>
-            </>
-          }
-        />
+      <Route
+        path="/profile"
+        element={
+          <>
+            <Navbar />
+            <AnimatedPage>
+              <div className="content-container">
+                <UserProfile />
+              </div>
+            </AnimatedPage>
+          </>
+        }
+      />
 
-        {/* Room route without AnimatedPage wrapper for instant room changes */}
-        <Route path="/room/:roomId" element={<RoomPage />} />
+      {/* Room route without AnimatedPage wrapper for instant room changes */}
+      <Route path="/room/:roomId" element={<RoomPage />} />
 
-        <Route
-          path="*"
-          element={
-            <>
-              <Navbar />
-              <AnimatedPage>
-                <div className="content-container">
-                  <div className="not-found">Page not found</div>
-                </div>
-              </AnimatedPage>
-            </>
-          }
-        />
-      </Routes>
-    </AnimatePresence>
+      <Route
+        path="*"
+        element={
+          <>
+            <Navbar />
+            <AnimatedPage>
+              <div className="content-container">
+                <div className="not-found">Page not found</div>
+              </div>
+            </AnimatedPage>
+          </>
+        }
+      />
+    </Routes>
   );
 }
 
